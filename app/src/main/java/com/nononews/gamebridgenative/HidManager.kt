@@ -7,48 +7,89 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothHidDevice
 import android.bluetooth.BluetoothHidDeviceAppSdpSettings
 import android.bluetooth.BluetoothProfile
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
+import android.webkit.WebView
 import androidx.core.content.ContextCompat
 import java.util.concurrent.Executors
 
-class HidManager(private val context: Context) {
+class HidManager(private val context: Context, private val webView: WebView) {
     private val TAG = "GamepadHID"
     private var bluetoothAdapter: BluetoothAdapter? = null
     private var hidDevice: BluetoothHidDevice? = null
     var connectedHost: BluetoothDevice? = null
         private set
 
+    // Device profile: "ps", "xbox", "generic", "racing"
+    var currentProfile: String = "xbox"
+    private var deviceName: String = "Xbox Wireless Controller"
+
     val isConnected: Boolean
         get() = connectedHost != null && hidDevice != null
 
+    // HID Descriptor: Standard gamepad (16 buttons + 4 axes)
     private val HID_DESCRIPTOR = byteArrayOf(
-        0x05.toByte(), 0x01.toByte(),       // USAGE_PAGE (Generic Desktop)
-        0x09.toByte(), 0x05.toByte(),       // USAGE (Gamepad)
-        0xa1.toByte(), 0x01.toByte(),       // COLLECTION (Application)
-        0x85.toByte(), 0x01.toByte(),       //   REPORT_ID (1)
-        0x05.toByte(), 0x09.toByte(),       //   USAGE_PAGE (Button)
-        0x19.toByte(), 0x01.toByte(),       //   USAGE_MINIMUM (Button 1)
-        0x29.toByte(), 0x10.toByte(),       //   USAGE_MAXIMUM (Button 16)
-        0x15.toByte(), 0x00.toByte(),       //   LOGICAL_MINIMUM (0)
-        0x25.toByte(), 0x01.toByte(),       //   LOGICAL_MAXIMUM (1)
-        0x75.toByte(), 0x01.toByte(),       //   REPORT_SIZE (1)
-        0x95.toByte(), 0x10.toByte(),       //   REPORT_COUNT (16)
-        0x81.toByte(), 0x02.toByte(),       //   INPUT (Data,Var,Abs)
-        0x05.toByte(), 0x01.toByte(),       //   USAGE_PAGE (Generic Desktop)
-        0x09.toByte(), 0x30.toByte(),       //   USAGE (X)
-        0x09.toByte(), 0x31.toByte(),       //   USAGE (Y)
-        0x09.toByte(), 0x32.toByte(),       //   USAGE (Z) -> Right X
-        0x09.toByte(), 0x35.toByte(),       //   USAGE (Rz) -> Right Y
-        0x15.toByte(), 0x00.toByte(),       //   LOGICAL_MINIMUM (0)
-        0x26.toByte(), 0xff.toByte(), 0x00.toByte(), //   LOGICAL_MAXIMUM (255)
-        0x75.toByte(), 0x08.toByte(),       //   REPORT_SIZE (8)
-        0x95.toByte(), 0x04.toByte(),       //   REPORT_COUNT (4)
-        0x81.toByte(), 0x02.toByte(),       //   INPUT (Data,Var,Abs)
-        0xc0.toByte()                       // END_COLLECTION
+        0x05.toByte(), 0x01.toByte(),
+        0x09.toByte(), 0x05.toByte(),
+        0xa1.toByte(), 0x01.toByte(),
+        0x85.toByte(), 0x01.toByte(),
+        0x05.toByte(), 0x09.toByte(),
+        0x19.toByte(), 0x01.toByte(),
+        0x29.toByte(), 0x10.toByte(),
+        0x15.toByte(), 0x00.toByte(),
+        0x25.toByte(), 0x01.toByte(),
+        0x75.toByte(), 0x01.toByte(),
+        0x95.toByte(), 0x10.toByte(),
+        0x81.toByte(), 0x02.toByte(),
+        0x05.toByte(), 0x01.toByte(),
+        0x09.toByte(), 0x30.toByte(),
+        0x09.toByte(), 0x31.toByte(),
+        0x09.toByte(), 0x32.toByte(),
+        0x09.toByte(), 0x35.toByte(),
+        0x15.toByte(), 0x00.toByte(),
+        0x26.toByte(), 0xff.toByte(), 0x00.toByte(),
+        0x75.toByte(), 0x08.toByte(),
+        0x95.toByte(), 0x04.toByte(),
+        0x81.toByte(), 0x02.toByte(),
+        0xc0.toByte()
     )
+
+    // BroadcastReceiver to catch discovered Bluetooth devices
+    private val discoveryReceiver = object : BroadcastReceiver() {
+        @SuppressLint("MissingPermission")
+        override fun onReceive(ctx: Context, intent: Intent) {
+            when (intent.action) {
+                BluetoothDevice.ACTION_FOUND -> {
+                    val device: BluetoothDevice? =
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                            intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+                        else
+                            @Suppress("DEPRECATION") intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+
+                    device?.let { sendDeviceToJS(it) }
+                }
+                BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
+                    notifyJS("window.onBluetoothScanFinished && window.onBluetoothScanFinished()")
+                }
+            }
+        }
+    }
+
+    fun setProfile(type: String) {
+        currentProfile = type
+        deviceName = when (type) {
+            "ps"      -> "Wireless Controller"
+            "xbox"    -> "Xbox Wireless Controller"
+            "generic" -> "GameBridge Controller"
+            "racing"  -> "GameBridge Wheel"
+            else      -> "GameBridge Controller"
+        }
+    }
 
     fun hasPermissions(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -61,10 +102,10 @@ class HidManager(private val context: Context) {
 
     @SuppressLint("MissingPermission")
     fun start() {
-        // BluetoothAdapter.getDefaultAdapter() is deprecated in newer APIs but standard for this use case if Context isn't BluetoothManager
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if (bluetoothAdapter == null || !bluetoothAdapter!!.isEnabled) {
             Log.e(TAG, "Bluetooth no disponible o desactivado")
+            notifyJS("window.onBluetoothError && window.onBluetoothError('BT_DISABLED')")
             return
         }
 
@@ -75,7 +116,6 @@ class HidManager(private val context: Context) {
                     registerApp()
                 }
             }
-
             override fun onServiceDisconnected(profile: Int) {
                 if (profile == BluetoothProfile.HID_DEVICE) {
                     hidDevice = null
@@ -85,12 +125,66 @@ class HidManager(private val context: Context) {
     }
 
     @SuppressLint("MissingPermission")
+    fun startDiscovery() {
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+        if (bluetoothAdapter == null || !bluetoothAdapter!!.isEnabled) {
+            notifyJS("window.onBluetoothError && window.onBluetoothError('BT_DISABLED')")
+            return
+        }
+
+        // Register receiver
+        val filter = IntentFilter().apply {
+            addAction(BluetoothDevice.ACTION_FOUND)
+            addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
+        }
+        try { context.unregisterReceiver(discoveryReceiver) } catch (_: Exception) {}
+        context.registerReceiver(discoveryReceiver, filter)
+
+        if (bluetoothAdapter!!.isDiscovering) bluetoothAdapter!!.cancelDiscovery()
+        bluetoothAdapter!!.startDiscovery()
+        Log.i(TAG, "Discovery started")
+    }
+
+    @SuppressLint("MissingPermission")
+    fun stopDiscovery() {
+        bluetoothAdapter?.cancelDiscovery()
+        try { context.unregisterReceiver(discoveryReceiver) } catch (_: Exception) {}
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun sendDeviceToJS(device: BluetoothDevice) {
+        val name = try { device.name ?: "Unknown" } catch (_: Exception) { "Unknown" }
+        val address = device.address ?: ""
+        val deviceClass = device.bluetoothClass?.majorDeviceClass ?: -1
+
+        // BluetoothClass.Device.Major.COMPUTER = 0x0100
+        val isComputer = deviceClass == 0x0100
+
+        val jsCode = "window.onDeviceFound && window.onDeviceFound(${escapeJS(name)}, '${address}', ${isComputer})"
+        notifyJS(jsCode)
+    }
+
+    @SuppressLint("MissingPermission")
+    fun connectToDevice(address: String) {
+        val device = try { bluetoothAdapter?.getRemoteDevice(address) } catch (_: Exception) { null }
+        if (device == null) {
+            notifyJS("window.onBluetoothError && window.onBluetoothError('DEVICE_NOT_FOUND')")
+            return
+        }
+        stopDiscovery()
+        // Start HID stack and it will auto-pair when discovered as HID device
+        start()
+        // Notify JS that we're attempting
+        notifyJS("window.onDeviceConnecting && window.onDeviceConnecting(${escapeJS(device.name ?: address)})")
+    }
+
+    @SuppressLint("MissingPermission")
     private fun registerApp() {
         hidDevice?.let { device ->
             val sdp = BluetoothHidDeviceAppSdpSettings(
-                "GameBridge",
+                deviceName,
                 "Virtual Gamepad",
-                "GameBridgeCorp",
+                "GameBridge",
                 BluetoothHidDevice.SUBCLASS2_GAMEPAD,
                 HID_DESCRIPTOR
             )
@@ -98,14 +192,23 @@ class HidManager(private val context: Context) {
             device.registerApp(sdp, null, null, Executors.newSingleThreadExecutor(), object : BluetoothHidDevice.Callback() {
                 override fun onAppStatusChanged(pluggedDevice: BluetoothDevice?, registered: Boolean) {
                     Log.i(TAG, "App Status Changed. Registered: $registered")
+                    if (registered) {
+                        notifyJS("window.onHidRegistered && window.onHidRegistered()")
+                    }
                 }
 
                 override fun onConnectionStateChanged(device: BluetoothDevice, state: Int) {
-                    Log.i(TAG, "Connection State Changed: $state")
-                    if (state == BluetoothProfile.STATE_CONNECTED) {
-                        connectedHost = device
-                    } else if (state == BluetoothProfile.STATE_DISCONNECTED) {
-                        connectedHost = null
+                    Log.i(TAG, "Connection State Changed: $state for ${device.name}")
+                    when (state) {
+                        BluetoothProfile.STATE_CONNECTED -> {
+                            connectedHost = device
+                            val name = try { device.name ?: "PC" } catch (_: Exception) { "PC" }
+                            notifyJS("window.onDeviceConnected && window.onDeviceConnected(${escapeJS(name)})")
+                        }
+                        BluetoothProfile.STATE_DISCONNECTED -> {
+                            connectedHost = null
+                            notifyJS("window.onDeviceDisconnected && window.onDeviceDisconnected()")
+                        }
                     }
                 }
             })
@@ -118,4 +221,17 @@ class HidManager(private val context: Context) {
             hidDevice?.sendReport(connectedHost, 1, report)
         }
     }
+
+    fun cleanup() {
+        try { context.unregisterReceiver(discoveryReceiver) } catch (_: Exception) {}
+        bluetoothAdapter?.cancelDiscovery()
+    }
+
+    private fun notifyJS(jsCode: String) {
+        webView.post {
+            webView.evaluateJavascript(jsCode, null)
+        }
+    }
+
+    private fun escapeJS(s: String): String = "'${s.replace("'", "\\'")}'"
 }

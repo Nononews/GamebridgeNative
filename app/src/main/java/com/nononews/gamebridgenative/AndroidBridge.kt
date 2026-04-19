@@ -1,33 +1,64 @@
 package com.nononews.gamebridgenative
 
-import android.content.Context
+import android.content.Intent
+import android.bluetooth.BluetoothAdapter
 import android.webkit.JavascriptInterface
 
-class AndroidBridge(private val context: Context, private val hidManager: HidManager) {
+class AndroidBridge(private val activity: MainActivity, private val hidManager: HidManager) {
 
+    /** Called by JS when user picks a controller type (ps, xbox, generic, racing) */
+    @JavascriptInterface
+    fun setConfig(profileType: String) {
+        hidManager.setProfile(profileType)
+    }
+
+    /** Rotate screen: landscape=true for gamepad, false=portrait for menu */
+    @JavascriptInterface
+    fun setOrientation(landscape: Boolean) {
+        activity.runOnUiThread {
+            activity.setOrientation(landscape)
+        }
+    }
+
+    /** Activate Bluetooth if off, then start HID registration */
     @JavascriptInterface
     fun conectarBluetooth() {
-        if (!hidManager.hasPermissions()) {
-            // Manejar falta de permisos si es necesario
-            return
-        }
+        if (!hidManager.hasPermissions()) return
         hidManager.start()
     }
 
+    /** Make device discoverable (120s) and start HID profile */
     @JavascriptInterface
     fun solicitarVisibilidadBluetooth() {
-        val discoverableIntent = android.content.Intent(android.bluetooth.BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
-            putExtra(android.bluetooth.BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
-            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
+            putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        context.startActivity(discoverableIntent)
+        activity.startActivity(discoverableIntent)
     }
 
+    /** Start scanning for nearby Bluetooth devices */
+    @JavascriptInterface
+    fun iniciarEscaneo() {
+        hidManager.startDiscovery()
+    }
+
+    /** Stop Bluetooth scan */
+    @JavascriptInterface
+    fun detenerEscaneo() {
+        hidManager.stopDiscovery()
+    }
+
+    /** Connect to a specific device by MAC address */
+    @JavascriptInterface
+    fun conectarDispositivo(address: String) {
+        hidManager.connectToDevice(address)
+    }
+
+    /** Send gamepad report: 16-bit buttons + 4 analog axes (0-255) */
     @JavascriptInterface
     fun enviarReporte(buttons: Int, leftX: Int, leftY: Int, rightX: Int, rightY: Int) {
-        if (!hidManager.isConnected) {
-            return
-        }
+        if (!hidManager.isConnected) return
         val report = ByteArray(6)
         report[0] = (buttons and 0xFF).toByte()
         report[1] = ((buttons shr 8) and 0xFF).toByte()
@@ -35,7 +66,6 @@ class AndroidBridge(private val context: Context, private val hidManager: HidMan
         report[3] = leftY.toByte()
         report[4] = rightX.toByte()
         report[5] = rightY.toByte()
-
         hidManager.sendReport(report)
     }
 }

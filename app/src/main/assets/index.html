@@ -7,7 +7,7 @@
     <title>GameBridge Pro Ultimate</title>
     <style>
         /* =========================================
-           1. VARIABLES Y TEMÁTICAS (COLORES)
+           1. VARIABLES Y TEMÃTICAS (COLORES)
            ========================================= */
         :root {
             --bg-dark: #07090e;
@@ -134,7 +134,7 @@
         }
 
         /* =========================================
-           3. PANTALLA 1: SELECCIÓN DE MANDO
+           3. PANTALLA 1: SELECCIÃ“N DE MANDO
            ========================================= */
         #screen-selection {
             justify-content: center;
@@ -416,7 +416,7 @@
             font-weight: bold;
         }
 
-        /* Panel Slider (Sin Vibración visual del texto) */
+        /* Panel Slider (Sin VibraciÃ³n visual del texto) */
         .scale-panel {
             position: absolute;
             bottom: 20px;
@@ -628,7 +628,7 @@
             pointer-events: none;
         }
 
-        /* BOTONES DE ACCIÓN */
+        /* BOTONES DE ACCIÃ“N */
         .act-btn {
             width: 48px;
             height: 48px;
@@ -763,119 +763,174 @@
         }
 
         /* =========================================
-           6. ESTADOS DEL CONTENEDOR (EDIT MODE)
-           ========================================= */
-        .state-edit .editor-grid {
-            opacity: 0.5;
-        }
-
-        .state-edit .gp-element {
-            cursor: move;
-            border-radius: 10px;
-        }
-
-        .state-edit .gp-element.selected {
-            outline: 2px dashed var(--theme-accent);
-            background: rgba(255, 255, 255, 0.05);
-            box-shadow: 0 0 15px var(--theme-color);
-        }
-
-        .state-play .top-toolbar {
-            transform: translateY(-100%);
-        }
-
-        .state-play .status-badge {
-            display: none;
-        }
-
-        /* =========================================
-           7. PANTALLA DE CONEXIÓN Y ERRORES
+           7. PANTALLA DE CONEXIÃ“N â€” ESCÃNER BT
            ========================================= */
         #screen-connect {
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
+            background: var(--bg-dark);
+            padding: 0;
+        }
+
+        .scan-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            flex-shrink: 0;
+        }
+
+        .scan-header .back-btn {
+            background: none;
+            border: 1.5px solid rgba(255,255,255,0.2);
+            color: white;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .scan-header .back-btn:active { background: rgba(255,255,255,0.1); }
+
+        .scan-header-info { flex: 1; }
+        .scan-header-info h2 { font-size: 1.1rem; font-weight: 700; }
+        .scan-header-info p { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+        .scan-status-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: #888;
+            animation: none;
+            flex-shrink: 0;
+        }
+        .scan-status-dot.scanning {
+            background: var(--theme-glow);
+            box-shadow: 0 0 8px var(--theme-glow);
+            animation: blink 1s infinite;
+        }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        .scan-action-bar {
+            display: flex;
+            gap: 10px;
+            padding: 12px 20px;
+            flex-shrink: 0;
+        }
+
+        .scan-profile-badge {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 0.78rem;
+            color: var(--theme-accent);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        #scan-list-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px 14px 14px;
+        }
+
+        .scan-section-title {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 10px 6px 6px;
+            font-weight: 600;
+        }
+
+        .device-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 13px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.07);
+            background: rgba(255,255,255,0.03);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .device-item:active { background: rgba(255,255,255,0.08); }
+
+        /* Computers highlighted */
+        .device-item.is-computer {
+            border-color: rgba(var(--rgb-glow), 0.4);
+            background: rgba(var(--rgb-glow), 0.06);
+        }
+
+        .device-icon {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem;
+            background: rgba(255,255,255,0.06);
+            flex-shrink: 0;
+        }
+        .device-item.is-computer .device-icon {
+            background: rgba(var(--rgb-glow), 0.15);
+        }
+
+        .device-info { flex: 1; min-width: 0; }
+        .device-name { font-size: 0.92rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .device-mac  { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+        .device-badge {
+            font-size: 0.63rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: rgba(var(--rgb-glow), 0.2);
+            color: var(--theme-accent);
+            flex-shrink: 0;
+        }
+
+        .scan-empty {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px 20px;
+            font-size: 0.9rem;
+        }
+
+        /* Connecting overlay */
+        #screen-connecting {
+            flex-direction: column;
             justify-content: center;
             align-items: center;
+            gap: 18px;
             background: var(--bg-dark);
         }
-
-        .radar {
-            width: 180px;
-            height: 180px;
+        .connecting-spinner {
+            width: 60px; height: 60px;
             border-radius: 50%;
-            border: 2px solid var(--theme-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 25px;
-            position: relative;
-            transition: border-color 0.5s, background 0.5s;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--theme-glow);
+            animation: spin 0.8s linear infinite;
         }
-
-        .radar::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            border: 2px solid var(--theme-glow);
-            animation: ping 1.5s infinite;
-            transition: border-color 0.5s;
-        }
-
-        /* Estado Éxito */
-        .radar.success {
-            border-color: #00ff66;
-            background: rgba(0, 255, 102, 0.1);
-        }
-
-        .radar.success::before {
-            display: none;
-        }
-
-        .radar.success h2 {
-            color: #00ff66 !important;
-        }
-
-        /* Estado Error */
-        .radar.error {
-            border-color: #ff1432;
-            background: rgba(255, 20, 50, 0.1);
-        }
-
-        .radar.error::before {
-            display: none;
-        }
-
-        .radar.error h2 {
-            color: #ff1432 !important;
-        }
-
-        .error-controls {
-            display: none;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .error-controls.active {
-            display: flex;
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         @keyframes ping {
-
-            75%,
-            100% {
-                transform: scale(1.5);
-                opacity: 0;
-            }
+            75%, 100% { transform: scale(1.5); opacity: 0; }
         }
     </style>
 </head>
 
 <body class="theme-init">
-
-    <!-- CANVAS PARA BRASAS DE FONDO -->
     <canvas id="bg-canvas"></canvas>
 
-    <!-- SCREEN 1: SELECCIÓN -->
+    <!-- SCREEN 1: SELECCIÃ“N (PORTRAIT) -->
     <div id="screen-selection" class="screen active">
         <h1 class="header-title">GameBridge</h1>
         <p class="header-subtitle">Selecciona tu Perfil</p>
@@ -884,29 +939,25 @@
             <div class="controller-card ps" onclick="startSetup('ps')">
                 <div class="card-icon">
                     <svg viewBox="0 0 24 24">
-                        <path
-                            d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z">
-                        </path>
+                        <path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"></path>
                         <circle cx="9" cy="14" r="1.5"></circle>
                         <circle cx="15" cy="14" r="1.5"></circle>
                     </svg>
                 </div>
                 <div class="card-title">PlayStation</div>
-                <div class="card-desc">Simétrico Azul</div>
+                <div class="card-desc">DualShock / DualSense</div>
             </div>
 
             <div class="controller-card xbox" onclick="startSetup('xbox')">
                 <div class="card-icon">
                     <svg viewBox="0 0 24 24">
-                        <path
-                            d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z">
-                        </path>
+                        <path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"></path>
                         <circle cx="7" cy="10" r="1.5"></circle>
                         <circle cx="15" cy="14" r="1.5"></circle>
                     </svg>
                 </div>
                 <div class="card-title">Xbox</div>
-                <div class="card-desc">Asimétrico Verde</div>
+                <div class="card-desc">Xbox Wireless Controller</div>
             </div>
 
             <div class="controller-card generic" onclick="startSetup('generic')">
@@ -919,8 +970,8 @@
                         <circle cx="18" cy="10" r="1.5"></circle>
                     </svg>
                 </div>
-                <div class="card-title">Genérico</div>
-                <div class="card-desc">Estándar Naranja</div>
+                <div class="card-title">GenÃ©rico</div>
+                <div class="card-desc">EstÃ¡ndar Naranja</div>
             </div>
 
             <div class="controller-card racing" onclick="startSetup('racing')">
@@ -944,25 +995,24 @@
         <div class="editor-grid" id="editor-grid"></div>
 
         <div class="top-toolbar" id="toolbar">
-            <div class="status-badge" id="hud-status"><span class="dot"></span> <span id="hud-title">Modo Prueba</span>
-            </div>
-
+            <button id="btn-back" onclick="goBackToSelection()" style="display:flex;align-items:center;justify-content:center;background:none;border:1.5px solid rgba(255,255,255,0.2);color:white;width:36px;height:36px;border-radius:50%;font-size:1.1rem;cursor:pointer;flex-shrink:0;">&#8592;</button>
+            <div class="status-badge" id="hud-status"><span class="dot"></span> <span id="hud-title">Modo Prueba</span></div>
             <div id="test-controls" style="display: flex; gap: 10px; align-items: center;">
-                <button class="btn btn-outline" onclick="setMode('edit')">⚙️ Editar HUD</button>
-                <button class="btn btn-primary" onclick="connectToPC()">Conectar PC ➔</button>
-                <button class="btn btn-outline" onclick="toggleSettings()"
-                    style="padding:6px 12px; border-radius:50%;">⚙️</button>
+                <button class="btn btn-outline" onclick="setMode('edit')">&#9881; Editar HUD</button>
+                <button class="btn btn-primary" onclick="connectToPC()">Conectar PC &#10145;</button>
+                <button class="btn btn-outline" onclick="toggleSettings()" style="padding:6px 12px;border-radius:50%;">&#9881;</button>
             </div>
-
-            <div id="edit-controls" style="display: none; gap: 10px;">
-                <button class="btn btn-outline" onclick="resetLayoutToDefault()">↺ Restaurar Original</button>
-                <button class="btn btn-outline" onclick="openLoadModal()">📂 Cargar Layout</button>
-                <button class="btn btn-primary" onclick="openSaveModal()">✓ Guardar Layout</button>
+            <div id="edit-controls" style="display: none; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+                <button class="btn btn-outline" onclick="resetLayoutToDefault()">&#8634; Restaurar</button>
+                <button class="btn btn-outline" onclick="openLoadModal()">&#128194; Cargar</button>
+                <button class="btn btn-primary" onclick="openSaveModal()">&#10003; Guardar</button>
+                <button onclick="exitEditMode()" style="background:rgba(255,50,50,0.15);border:1px solid rgba(255,80,80,0.4);color:#ff7070;padding:7px 14px;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;">&#10006; Salir Editor</button>
             </div>
+        </div>
         </div>
 
         <div class="settings-modal" id="settings-modal">
-            <div class="settings-title">Fuerza de Vibración</div>
+            <div class="settings-title">Fuerza de VibraciÃ³n</div>
             <div class="haptic-opts">
                 <button class="opt-btn" onclick="setHapticLvl(0)">OFF</button>
                 <button class="opt-btn" onclick="setHapticLvl(0.5)">Suave</button>
@@ -989,14 +1039,14 @@
         </div>
 
         <div class="scale-panel" id="scale-panel">
-            <span style="color:white; font-size:0.9rem; font-weight:bold;">TAMAÑO BOTÓN:</span>
+            <span style="color:white; font-size:0.9rem; font-weight:bold;">TAMAÃ‘O BOTÃ“N:</span>
             <input type="range" id="size-slider" min="0.5" max="2" step="0.1" value="1">
             <span id="scale-value">1.0x</span>
         </div>
 
         <div class="gamepad-container state-test" id="gamepad-area">
 
-            <!-- ====== ESTÁNDAR ====== -->
+            <!-- ====== ESTÃNDAR ====== -->
             <div class="gp-element standard-el" id="el-lstick" data-id="lstick">
                 <div class="analog-stick">
                     <div class="analog-thumb" id="thumb-l"></div>
@@ -1010,10 +1060,10 @@
             <div class="gp-element standard-el" id="el-dpad" data-id="dpad">
                 <div class="dpad">
                     <div class="d-btn d-center"></div>
-                    <div class="d-btn d-up interactive-btn">▲</div>
-                    <div class="d-btn d-down interactive-btn">▼</div>
-                    <div class="d-btn d-left interactive-btn">◀</div>
-                    <div class="d-btn d-right interactive-btn">▶</div>
+                    <div class="d-btn d-up interactive-btn">â–²</div>
+                    <div class="d-btn d-down interactive-btn">â–¼</div>
+                    <div class="d-btn d-left interactive-btn">â—€</div>
+                    <div class="d-btn d-right interactive-btn">â–¶</div>
                 </div>
             </div>
 
@@ -1055,10 +1105,10 @@
 
             <!-- ====== RACING ====== -->
             <div class="gp-element racing-el" id="el-steer-left" data-id="steer-left">
-                <div class="steer-btn interactive-btn">◀</div>
+                <div class="steer-btn interactive-btn">â—€</div>
             </div>
             <div class="gp-element racing-el" id="el-steer-right" data-id="steer-right">
-                <div class="steer-btn interactive-btn">▶</div>
+                <div class="steer-btn interactive-btn">â–¶</div>
             </div>
 
             <div class="gp-element racing-el" id="el-gas" data-id="gas">
@@ -1077,10 +1127,10 @@
                     </svg></div>
             </div>
             <div class="gp-element racing-el" id="el-gear-up" data-id="gear-up">
-                <div class="gear-btn interactive-btn">△</div>
+                <div class="gear-btn interactive-btn">â–³</div>
             </div>
             <div class="gp-element racing-el" id="el-gear-down" data-id="gear-down">
-                <div class="gear-btn interactive-btn">▽</div>
+                <div class="gear-btn interactive-btn">â–½</div>
             </div>
 
             <div class="gp-element racing-el" id="el-handbrake" data-id="handbrake">
@@ -1095,32 +1145,51 @@
                 <div class="act-btn interactive-btn" style="position:relative; top:0; left:0;">N2O</div>
             </div>
             <div class="gp-element racing-el" id="el-cam" data-id="cam">
-                <div class="stick-btn-group interactive-btn">📷</div>
+                <div class="stick-btn-group interactive-btn">ðŸ“·</div>
             </div>
             <div class="gp-element racing-el" id="el-horn" data-id="horn">
-                <div class="stick-btn-group interactive-btn">📯</div>
+                <div class="stick-btn-group interactive-btn">ðŸ“¯</div>
             </div>
 
         </div>
     </div>
 
-    <!-- SCREEN 3: CONECTANDO CON MANEJO DE ERROR -->
+    <!-- SCREEN 3: ESCÃNER BLUETOOTH -->
     <div id="screen-connect" class="screen">
-        <div class="radar" id="bt-radar">
-            <h2 id="bt-text" style="color: var(--theme-glow); transition: color 0.5s;">B T</h2>
+        <div class="scan-header">
+            <button class="back-btn" onclick="goBackToSelection()">&#8592;</button>
+            <div class="scan-header-info">
+                <h2>Buscar PC &#8212; GameBridge</h2>
+                <p id="scan-subtitle">Dispositivos al alcance</p>
+            </div>
+            <div class="scan-status-dot" id="scan-dot"></div>
         </div>
-        <h2 id="connect-title" style="margin-bottom: 10px;">Buscando PC Host...</h2>
-        <p style="color: var(--text-muted);" id="connect-log">Iniciando puente Bluetooth nativo</p>
 
-        <div class="error-controls" id="error-controls">
-            <button class="btn btn-outline" onclick="connectToPC()">↺ Reintentar</button>
-            <button class="btn btn-danger" onclick="forcePlayMode()">Forzar Modo Prueba ➔</button>
+        <div class="scan-action-bar">
+            <span class="scan-profile-badge" id="scan-profile-badge">Xbox</span>
+            <button class="btn btn-primary" onclick="startBluetoothScan()" id="btn-scan" style="font-size:0.82rem;padding:7px 16px;">&#128268; Buscar</button>
+            <button class="btn btn-outline" onclick="goBackToSelection()" style="font-size:0.82rem;padding:7px 16px;margin-left:auto;">&#10006; Cancelar</button>
         </div>
+
+        <div id="scan-list-wrapper">
+            <div class="scan-section-title">COMPUTADORAS DETECTADAS</div>
+            <div id="scan-computers"><div class="scan-empty">Presiona "Buscar" para escanear...</div></div>
+            <div class="scan-section-title" id="scan-other-title" style="display:none;">OTROS DISPOSITIVOS</div>
+            <div id="scan-others"></div>
+        </div>
+    </div>
+
+    <!-- SCREEN 4: CONECTANDO... -->
+    <div id="screen-connecting" class="screen">
+        <div class="connecting-spinner"></div>
+        <h2 id="connecting-title" style="font-size:1.1rem;">Conectando...</h2>
+        <p id="connecting-sub" style="color:var(--text-muted);font-size:0.85rem;">Esperando emparejamiento del PC</p>
+        <button class="btn btn-outline" onclick="goBackToSelection()" style="margin-top:20px;">Cancelar</button>
     </div>
 
     <!-- SCRIPTS -->
     <script>
-        // --- 1. CONFIGURACIONES DE ALINEACIÓN PERFECTA (MÁS AGRUPADOS Y CENTRADOS) ---
+        // --- 1. CONFIGURACIONES DE ALINEACIÃ“N PERFECTA (MÃS AGRUPADOS Y CENTRADOS) ---
         const defaultLayouts = {
             ps: {
                 l2: { cx: 18, cy: 18, ox: 0, oy: 0, s: 1 }, r2: { cx: 82, cy: 18, ox: 0, oy: 0, s: 1 },
@@ -1176,7 +1245,7 @@
         };
         const showScreen = (id) => { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
 
-        // --- 2. SISTEMA DE PARTÍCULAS ---
+        // --- 2. SISTEMA DE PARTÃCULAS ---
         const canvas = document.getElementById('bg-canvas'); const ctx = canvas.getContext('2d'); let particles = [];
         const resizeCanvas = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
         window.addEventListener('resize', resizeCanvas); resizeCanvas();
@@ -1191,13 +1260,19 @@
         const animateParticles = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); particles.forEach(p => { p.update(); p.draw(); }); requestAnimationFrame(animateParticles); };
         animateParticles();
 
-        // --- 3. GESTIÓN DE LAYOUTS ---
+        // --- 3. GESTIÃ“N DE LAYOUTS ---
         const startSetup = (type) => {
             hapticUI(30); currentType = type; document.body.className = `theme-${type}`;
             setTimeout(() => { currentRgbGlow = getComputedStyle(document.body).getPropertyValue('--rgb-glow').trim() || '255,255,255'; }, 50);
 
+            // Notify native layer of chosen profile
+            if (window.AndroidBridge) {
+                window.AndroidBridge.setConfig(type);
+                window.AndroidBridge.setOrientation(true); // Landscape for gamepad
+            }
+
             if (type !== 'racing') {
-                const labels = { ps: ['△', '✕', '◻', '◯', 'L1', 'R1', 'L2', 'R2', 'L3', 'R3'], xbox: ['Y', 'A', 'X', 'B', 'LB', 'RB', 'LT', 'RT', 'LS', 'RS'], generic: ['1', '2', '3', '4', 'L', 'R', 'ZL', 'ZR', 'LC', 'RC'] }[type];
+                const labels = { ps: ['â–³', 'âœ•', 'â—»', 'â—¯', 'L1', 'R1', 'L2', 'R2', 'L3', 'R3'], xbox: ['Y', 'A', 'X', 'B', 'LB', 'RB', 'LT', 'RT', 'LS', 'RS'], generic: ['1', '2', '3', '4', 'L', 'R', 'ZL', 'ZR', 'LC', 'RC'] }[type];
                 ['top', 'bot', 'left', 'right', 'l1', 'r1', 'l2', 'r2', 'l3', 'r3'].forEach((id, i) => document.getElementById(`lbl-${id}`).innerText = labels[i]);
             }
             loadLayout(); setMode('test'); showScreen('screen-gamepad');
@@ -1285,17 +1360,36 @@
         const setMode = (mode) => {
             hapticUI(15); appState = mode;
             document.getElementById('gamepad-area').className = `gamepad-container state-${mode}`;
-            deselectElement(); document.getElementById('settings-modal').classList.remove('active');
+            deselectElement(); closeModals();
 
+            const backBtn = document.getElementById('btn-back');
             if (mode === 'test') {
                 document.getElementById('hud-title').innerText = 'Modo Prueba';
                 document.getElementById('test-controls').style.display = 'flex';
                 document.getElementById('edit-controls').style.display = 'none';
+                if (backBtn) backBtn.style.display = 'flex';
             } else if (mode === 'edit') {
                 document.getElementById('hud-title').innerText = 'Editor HUD';
                 document.getElementById('test-controls').style.display = 'none';
                 document.getElementById('edit-controls').style.display = 'flex';
+                if (backBtn) backBtn.style.display = 'none'; // Hide back during edit
+            } else if (mode === 'play') {
+                if (backBtn) backBtn.style.display = 'none';
             }
+        };
+
+        const exitEditMode = () => { hapticUI(20); setMode('test'); };
+
+        const goBackToSelection = () => {
+            hapticUI(30);
+            if (window.AndroidBridge) {
+                try { window.AndroidBridge.detenerEscaneo(); } catch(e){}
+                window.AndroidBridge.setOrientation(false); // Portrait for menu
+            }
+            setMode('test');
+            showScreen('screen-selection');
+            currentType = 'init';
+            document.body.className = 'theme-init';
         };
 
         // --- 4. DRAG & DROP Y ESCALADO ---
@@ -1340,7 +1434,7 @@
 
         gamepadArea.addEventListener('touchstart', (e) => { if (appState === 'edit' && e.target === gamepadArea) deselectElement(); });
 
-        // --- 5. FÍSICA ANALÓGICA ---
+        // --- 5. FÃSICA ANALÃ“GICA ---
         const setupAnalogStick = (baseId, thumbId) => {
             const base = document.getElementById(baseId); const thumb = document.getElementById(thumbId);
             if (!base || !thumb) return;
@@ -1380,73 +1474,132 @@
             btn.addEventListener('touchcancel', () => btn.classList.remove('active'));
         });
 
-        // --- 7. CONEXIÓN CON MANEJO DE ERROR ---
+        // --- 7. BLUETOOTH SCANNER + CONEXIÃ“N REAL ---
         const connectToPC = () => {
             hapticUI(40);
-            document.getElementById('settings-modal').classList.remove('active');
+            closeModals();
+            // Update profile badge
+            const names = { ps: 'PlayStation', xbox: 'Xbox', generic: 'GenÃ©rico', racing: 'Carreras' };
+            document.getElementById('scan-profile-badge').innerText = names[currentType] || currentType;
+            // Reset scan state
+            document.getElementById('scan-computers').innerHTML = '<div class="scan-empty">Presiona "Buscar" para escanear...</div>';
+            document.getElementById('scan-others').innerHTML = '';
+            document.getElementById('scan-other-title').style.display = 'none';
+            document.getElementById('scan-dot').classList.remove('scanning');
             showScreen('screen-connect');
-
-            const radar = document.getElementById('bt-radar');
-            const btText = document.getElementById('bt-text');
-            const title = document.getElementById('connect-title');
-            const log = document.getElementById('connect-log');
-            const errControls = document.getElementById('error-controls');
-
-            radar.classList.remove('success', 'error');
-            btText.innerText = "B T"; title.innerText = "Buscando PC Host..."; log.innerText = "Iniciando puente Bluetooth..."; errControls.classList.remove('active');
-
-            setTimeout(() => {
-                log.innerText = "Estableciendo conexión segura...";
-                setTimeout(() => {
-                    if (window.AndroidBridge && typeof window.AndroidBridge.conectarBluetooth === 'function') {
-                        // Solicita visibilidad (LANZARÁ EL DIÁLOGO DEL SISTEMA)
-                        if (typeof window.AndroidBridge.solicitarVisibilidadBluetooth === 'function') {
-                            window.AndroidBridge.solicitarVisibilidadBluetooth();
-                        }
-                        
-                        window.AndroidBridge.conectarBluetooth();
-                        hapticUI([30, 50, 30]);
-                        radar.classList.add('success');
-                        btText.innerText = "✓"; title.innerText = "Modo Visible Activo"; log.innerText = "Empareja el PC. Se enviarán datos...";
-
-                        setTimeout(() => { 
-                            setMode('play'); 
-                            showScreen('screen-gamepad'); 
-                            startNativeGamepadLoop(); // NUEVO: INICIA BUCLE DE JUEGO A ANDROID
-                        }, 1500);
-                    } else {
-                        hapticUI([50, 0, 50]);
-                        radar.classList.add('error');
-                        btText.innerText = "✕"; title.innerText = "Imposible Conectar";
-                        log.innerText = "Módulo Bluetooth nativo no detectado. ¿Estás en un navegador web?";
-                        errControls.classList.add('active');
-                    }
-                }, 1500);
-            }, 1000);
         };
-        
+
+        const startBluetoothScan = () => {
+            hapticUI(30);
+            document.getElementById('scan-computers').innerHTML = '<div class="scan-empty">Escaneando...</div>';
+            document.getElementById('scan-others').innerHTML = '';
+            document.getElementById('scan-other-title').style.display = 'none';
+            document.getElementById('scan-dot').classList.add('scanning');
+            document.getElementById('scan-subtitle').innerText = 'Buscando dispositivos...';
+
+            if (window.AndroidBridge && window.AndroidBridge.iniciarEscaneo) {
+                window.AndroidBridge.iniciarEscaneo();
+            } else {
+                // Dev/browser fallback
+                setTimeout(() => {
+                    document.getElementById('scan-dot').classList.remove('scanning');
+                    document.getElementById('scan-subtitle').innerText = 'Listo. Toca un dispositivo para conectar.';
+                    document.getElementById('scan-computers').innerHTML = '<div class="scan-empty" style="color:#ff6060">Bluetooth nativo no disponible en navegador</div>';
+                }, 2000);
+            }
+        };
+
+        // Called by Native (HidManager) when a device is found during discovery
+        window.onDeviceFound = (name, address, isComputer) => {
+            if (isComputer) {
+                const el = document.getElementById('scan-computers');
+                // Remove placeholder text
+                if (el.querySelector('.scan-empty')) el.innerHTML = '';
+                el.insertAdjacentHTML('beforeend', `
+                    <div class="device-item is-computer" onclick="connectDevice('${address}', '${name}')">
+                        <div class="device-icon">ðŸ–¥</div>
+                        <div class="device-info">
+                            <div class="device-name">${name}</div>
+                            <div class="device-mac">${address}</div>
+                        </div>
+                        <div class="device-badge">PC</div>
+                    </div>`);
+            } else {
+                document.getElementById('scan-other-title').style.display = 'block';
+                const el = document.getElementById('scan-others');
+                el.insertAdjacentHTML('beforeend', `
+                    <div class="device-item" onclick="connectDevice('${address}', '${name}')">
+                        <div class="device-icon">ðŸ“±</div>
+                        <div class="device-info">
+                            <div class="device-name">${name}</div>
+                            <div class="device-mac">${address}</div>
+                        </div>
+                    </div>`);
+            }
+        };
+
+        window.onBluetoothScanFinished = () => {
+            document.getElementById('scan-dot').classList.remove('scanning');
+            document.getElementById('scan-subtitle').innerText = 'Escaneo completo. Toca un PC para conectar.';
+            if (!document.getElementById('scan-computers').querySelector('.device-item')) {
+                document.getElementById('scan-computers').innerHTML = '<div class="scan-empty">No se encontraron computadoras. AsegÃºrate de que el PC tenga Bluetooth activo.</div>';
+            }
+        };
+
+        window.onDeviceConnecting = (name) => {
+            document.getElementById('connecting-title').innerText = `Conectando a ${name}...`;
+            document.getElementById('connecting-sub').innerText = 'Acepta el PIN de emparejamiento en tu PC';
+            showScreen('screen-connecting');
+        };
+
+        window.onDeviceConnected = (name) => {
+            hapticUI([30, 50, 30]);
+            document.getElementById('connecting-title').innerText = `Â¡Conectado a ${name}!`;
+            document.getElementById('connecting-sub').innerText = 'Emparejado. Iniciando modo gamepad...';
+            setTimeout(() => {
+                setMode('play');
+                showScreen('screen-gamepad');
+                startNativeGamepadLoop();
+            }, 1200);
+        };
+
+        window.onDeviceDisconnected = () => {
+            if (appState === 'play') {
+                setMode('test');
+                showScreen('screen-gamepad');
+            }
+        };
+
+        window.onHidRegistered = () => { /* HID profile registered, ready to pair */ };
+        window.onBluetoothError = (code) => {
+            document.getElementById('scan-dot').classList.remove('scanning');
+            document.getElementById('scan-subtitle').innerText = code === 'BT_DISABLED' ? 'Bluetooth apagado. ActivÃ¡ndolo...' : 'Error de conexiÃ³n';
+        };
+
+        const connectDevice = (address, name) => {
+            hapticUI(20);
+            if (window.AndroidBridge && window.AndroidBridge.conectarDispositivo) {
+                window.AndroidBridge.conectarDispositivo(address);
+            } else {
+                window.onDeviceConnecting(name);
+            }
+        };
+
         const startNativeGamepadLoop = () => {
-            if(!window.AndroidBridge) return;
+            if (!window.AndroidBridge) return;
             setInterval(() => {
-                if(appState !== 'play') return;
+                if (appState !== 'play') return;
                 let buttons = 0;
                 let lx = 128, ly = 128, rx = 128, ry = 128;
-                
-                // Botones Interactivos
-                if(document.querySelector('.act-bottom.active')) buttons |= (1 << 0); // A
-                if(document.querySelector('.act-right.active'))  buttons |= (1 << 1); // B
-                if(document.querySelector('.act-left.active'))   buttons |= (1 << 2); // X
-                if(document.querySelector('.act-top.active'))    buttons |= (1 << 3); // Y
-                
-                // ... Leer sticks lstick, rstick posiciones ... 
-                // Por ahora se deja hardcodeado 128 (centro)
-                
+                if (document.querySelector('.act-bottom.active')) buttons |= (1 << 0);
+                if (document.querySelector('.act-right.active'))  buttons |= (1 << 1);
+                if (document.querySelector('.act-left.active'))   buttons |= (1 << 2);
+                if (document.querySelector('.act-top.active'))    buttons |= (1 << 3);
                 window.AndroidBridge.enviarReporte(buttons, lx, ly, rx, ry);
-            }, 20); // 50 Hz Refresh
+            }, 20);
         };
 
         const forcePlayMode = () => { hapticUI(30); setMode('play'); showScreen('screen-gamepad'); };
     </script>
 </body>
-
 </html>
