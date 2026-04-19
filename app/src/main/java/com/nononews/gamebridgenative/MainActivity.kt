@@ -17,10 +17,11 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        hideSystemUI()
 
         webView = WebView(this)
         setContentView(webView)
+
+        hideSystemUI()
 
         hidManager = HidManager(this)
 
