@@ -19,7 +19,7 @@ import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var webView: WebView
+    lateinit var webView: WebView
     lateinit var hidManager: HidManager
 
     companion object {
