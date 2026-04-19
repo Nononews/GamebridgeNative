@@ -660,7 +660,7 @@
     </div>
 
     <!-- MODO PERIFERICO: Anunciarse como gamepad -->
-    <div id="pair-peripheral-panel" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px;text-align:center;">
+    <div id="pair-peripheral-panel" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:20px;padding:24px 24px 60px;text-align:center;overflow-y:auto;">
 
         <!-- Animacion tipo "controlador buscando" -->
         <div id="pair-pulse-ring" style="position:relative;width:110px;height:110px;">
@@ -1046,14 +1046,11 @@ function startSetup(type) {
     var allRace = document.querySelectorAll('.racing-el');
 
     if (type === 'racing') {
-        // Para Carreras: ocultar face buttons y dpad; mantener hombros y sticks
-        var raceHide = ['el-top','el-bot','el-left','el-right','el-dpad','el-l3','el-r3'];
+        // Para Carreras: ocultar TODOS los botones estandar (ABXY, Dpad, L1/R1, Sticks)
         for (var s = 0; s < allStd.length; s++) {
-            var elId = allStd[s].id;
-            // Use explicit 'none'/'block' to override any CSS cascade
-            allStd[s].style.display = (raceHide.indexOf(elId) !== -1) ? 'none' : 'block';
+            allStd[s].style.display = 'none';
         }
-        // Explicitly set 'block' on racing elements (overrides any CSS)
+        // Explicitly set 'block' on racing elements
         for (var r = 0; r < allRace.length; r++) allRace[r].style.display = 'block';
     } else {
         // Para otros: mostrar todos estandar, ocultar racing explicitamente
