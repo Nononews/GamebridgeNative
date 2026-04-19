@@ -1,309 +1,224 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GameBridge Pro Ultimate</title>
+    <title>GameBridge Pro</title>
     <style>
-        /* =========================================
-           1. VARIABLES Y TEM├üTICAS (COLORES)
-           ========================================= */
+        /* =====================================================
+           0. GOOGLE FONT
+           ===================================================== */
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap');
+
+        /* =====================================================
+           1. VARIABLES DE TEMA
+           ===================================================== */
         :root {
             --bg-dark: #07090e;
-            --bg-panel: rgba(17, 21, 32, 0.6);
-            --text-main: #ffffff;
-            --text-muted: #8892b0;
+            --bg-card: #0f1318;
+            --bg-card-hover: #171c24;
+            --text-main: #e8eaf0;
+            --text-muted: #6b7280;
+            --border: rgba(255,255,255,0.07);
         }
 
-        /* Temas */
-        body.theme-init {
-            --theme-color: rgba(170, 85, 255, 0.15);
-            --theme-glow: #aa55ff;
-            --theme-accent: #d4aaff;
-            --rgb-glow: 170, 85, 255;
-        }
+        body.theme-init   { --theme-color:#8b5cf6; --theme-glow:#8b5cf6; --theme-accent:#a78bfa; --rgb-glow:139,92,246; }
+        body.theme-ps     { --theme-color:#006FFF; --theme-glow:#0094ff; --theme-accent:#58b5ff; --rgb-glow:0,148,255; }
+        body.theme-xbox   { --theme-color:#107c10; --theme-glow:#16a116; --theme-accent:#4ccc4c; --rgb-glow:22,161,22; }
+        body.theme-generic{ --theme-color:#f97316; --theme-glow:#fb923c; --theme-accent:#fdba74; --rgb-glow:249,115,22; }
+        body.theme-racing { --theme-color:#ef4444; --theme-glow:#f87171; --theme-accent:#fca5a5; --rgb-glow:239,68,68; }
 
-        body.theme-ps {
-            --theme-color: rgba(0, 110, 255, 0.15);
-            --theme-glow: #0088ff;
-            --theme-accent: #00d4ff;
-            --rgb-glow: 0, 136, 255;
-        }
-
-        body.theme-xbox {
-            --theme-color: rgba(16, 124, 16, 0.15);
-            --theme-glow: #107c10;
-            --theme-accent: #00ff66;
-            --rgb-glow: 16, 124, 16;
-        }
-
-        body.theme-generic {
-            --theme-color: rgba(255, 110, 0, 0.15);
-            --theme-glow: #ff7700;
-            --theme-accent: #ffae00;
-            --rgb-glow: 255, 119, 0;
-        }
-
-        body.theme-racing {
-            --theme-color: rgba(255, 20, 50, 0.15);
-            --theme-glow: #ff1432;
-            --theme-accent: #ff5e00;
-            --rgb-glow: 255, 20, 50;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
+        /* =====================================================
+           2. RESET Y BASE
+           ===================================================== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
         body {
-            background-color: var(--bg-dark);
+            background: var(--bg-dark);
             color: var(--text-main);
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Outfit', sans-serif;
+            width: 100vw;
+            height: 100vh;
             overflow: hidden;
-            touch-action: none;
-            width: 100vw;
-            height: 100vh;
-            transition: background-color 0.8s ease;
+            position: relative;
         }
 
-        /* =========================================
-           2. SISTEMA DE FONDOS Y MARCA DE AGUA
-           ========================================= */
         #bg-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
             z-index: 0;
-            pointer-events: none;
         }
 
-        .watermark {
-            position: absolute;
-            bottom: 15px;
-            width: 100%;
-            text-align: center;
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.3);
-            letter-spacing: 3px;
-            font-weight: 300;
-            text-transform: uppercase;
-            pointer-events: none;
-            z-index: 5;
-        }
-
-        .watermark span {
-            font-weight: 800;
-            color: var(--theme-glow);
-            text-shadow: 0 0 10px var(--theme-glow);
-            transition: color 0.8s, text-shadow 0.8s;
-        }
-
+        /* =====================================================
+           3. SISTEMA DE PANTALLAS
+           CRITICAL: overflow:hidden impide que elementos
+           position:absolute de pantallas inactivas se filtren
+           ===================================================== */
         .screen {
             position: absolute;
-            overflow: hidden;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             display: none;
             flex-direction: column;
+            overflow: hidden;
             z-index: 10;
         }
-
         .screen.active {
             display: flex;
-            animation: fadeIn 0.4s ease;
+            animation: fadeIn 0.35s ease;
         }
-
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.98);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
+            from { opacity: 0; transform: scale(0.98); }
+            to   { opacity: 1; transform: scale(1); }
         }
 
-        /* =========================================
-           3. PANTALLA 1: SELECCI├ôN DE MANDO
-           ========================================= */
+        /* =====================================================
+           4. PANTALLA 1 - SELECCION
+           ===================================================== */
         #screen-selection {
             justify-content: center;
             align-items: center;
-            background: radial-gradient(circle at center, rgba(17, 22, 37, 0.8) 0%, var(--bg-dark) 100%);
-            overflow-y: auto;
+            gap: 0;
+            padding: 30px 24px;
         }
 
         .header-title {
-            font-size: 2.5rem;
-            font-weight: 900;
-            background: linear-gradient(120deg, #888888 0%, #ffffff 40%, var(--theme-glow) 50%, #ffffff 60%, #888888 100%);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-top: 10px;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            animation: sword-shine 3.5s linear infinite;
-            transition: background 0.8s;
+            font-size: 2.4rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            text-align: center;
+            z-index: 1;
         }
-
-        @keyframes sword-shine {
-            0% {
-                background-position: 200% center;
-            }
-
-            100% {
-                background-position: -200% center;
-            }
-        }
-
+        .header-title span { color: var(--theme-accent); }
         .header-subtitle {
-            color: var(--text-muted);
-            margin-bottom: 30px;
-            font-size: 0.95rem;
+            font-size: 0.78rem;
+            letter-spacing: 4px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            margin-bottom: 36px;
+            text-align: center;
+            z-index: 1;
         }
 
         .card-container {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            justify-content: center;
-            max-width: 900px;
-            padding-bottom: 40px;
-            z-index: 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            width: 100%;
+            max-width: 440px;
+            z-index: 1;
         }
 
         .controller-card {
-            background: var(--bg-panel);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 18px;
-            width: 190px;
-            padding: 25px 10px;
-            text-align: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px 16px 22px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
         }
-
-        .controller-card:hover {
-            background: rgba(25, 30, 45, 0.8);
-        }
-
-        .controller-card.ps:active {
-            border-color: #0088ff;
-            box-shadow: 0 0 25px rgba(0, 136, 255, 0.3);
+        .controller-card:active {
             transform: scale(0.95);
+            background: var(--bg-card-hover);
+            border-color: var(--theme-glow);
+            box-shadow: 0 0 20px rgba(var(--rgb-glow), 0.25);
         }
 
-        .controller-card.xbox:active {
-            border-color: #107c10;
-            box-shadow: 0 0 25px rgba(16, 124, 16, 0.3);
-            transform: scale(0.95);
+        .card-icon {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: rgba(var(--rgb-glow), 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(var(--rgb-glow), 0.25);
         }
-
-        .controller-card.generic:active {
-            border-color: #ff7700;
-            box-shadow: 0 0 25px rgba(255, 119, 0, 0.3);
-            transform: scale(0.95);
-        }
-
-        .controller-card.racing:active {
-            border-color: #ff1432;
-            box-shadow: 0 0 25px rgba(255, 20, 50, 0.3);
-            transform: scale(0.95);
-        }
-
         .card-icon svg {
-            width: 55px;
-            height: 55px;
-            margin-bottom: 15px;
+            width: 30px;
+            height: 30px;
+            stroke: var(--theme-glow);
             fill: none;
-            stroke: currentColor;
             stroke-width: 1.5;
             stroke-linecap: round;
             stroke-linejoin: round;
         }
-
-        .controller-card.ps .card-icon {
-            color: #00d4ff;
-            filter: drop-shadow(0 0 6px rgba(0, 212, 255, 0.4));
-        }
-
-        .controller-card.xbox .card-icon {
-            color: #00ff66;
-            filter: drop-shadow(0 0 6px rgba(0, 255, 102, 0.4));
-        }
-
-        .controller-card.generic .card-icon {
-            color: #ffae00;
-            filter: drop-shadow(0 0 6px rgba(255, 174, 0, 0.4));
-        }
-
-        .controller-card.racing .card-icon {
-            color: #ff5e00;
-            filter: drop-shadow(0 0 6px rgba(255, 94, 0, 0.4));
+        .card-icon svg path, .card-icon svg circle, .card-icon svg rect {
+            fill: none;
+            stroke: var(--theme-glow);
         }
 
         .card-title {
-            font-size: 1.1rem;
-            font-weight: bold;
-            margin-bottom: 6px;
-            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            text-align: center;
         }
-
         .card-desc {
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             color: var(--text-muted);
-            line-height: 1.5;
+            text-align: center;
         }
 
-        /* =========================================
-           4. PANTALLA 2: GAMEPAD Y EDITOR
-           ========================================= */
+        .watermark {
+            margin-top: 30px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            z-index: 1;
+        }
+        .watermark span { color: var(--theme-accent); font-weight: 700; }
+
+        /* =====================================================
+           5. PANTALLA 2 - GAMEPAD (LANDSCAPE)
+           ===================================================== */
         #screen-gamepad {
-            background: radial-gradient(circle at 50% 50%, var(--theme-color) 0%, transparent 80%);
-            transition: background 0.5s ease;
-        }
-
-        .editor-grid {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background-image: linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-            background-size: 40px 40px;
-            z-index: 0;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
+            background: var(--bg-dark);
         }
 
         .top-toolbar {
             position: absolute;
-            top: 0;
-            left: 0;
+            top: 0; left: 0;
             width: 100%;
-            padding: 12px 25px;
+            padding: 10px 18px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: linear-gradient(180deg, rgba(7, 9, 14, 0.95), transparent);
-            z-index: 100;
+            background: linear-gradient(180deg, rgba(7,9,14,0.95), transparent);
+            z-index: 50;
+            gap: 10px;
             transition: transform 0.3s ease;
         }
+
+        .state-play .top-toolbar { transform: translateY(-100%); }
+        .state-play .status-badge { display: none; }
+
+        .btn-back-circle {
+            background: rgba(255,255,255,0.05);
+            border: 1.5px solid rgba(255,255,255,0.15);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .btn-back-circle:active { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); }
 
         .status-badge {
             display: flex;
@@ -311,692 +226,458 @@
             gap: 8px;
             color: var(--text-main);
             font-weight: 600;
-            font-size: 0.9rem;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 5px 15px;
+            font-size: 0.85rem;
+            background: rgba(255,255,255,0.05);
+            padding: 5px 14px;
             border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
         }
-
         .status-badge .dot {
-            width: 8px;
-            height: 8px;
+            width: 7px; height: 7px;
             border-radius: 50%;
             background: var(--theme-glow);
-            box-shadow: 0 0 10px var(--theme-glow);
-            transition: background 0.5s, box-shadow 0.5s;
+            box-shadow: 0 0 8px var(--theme-glow);
         }
 
         .btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 8px 18px;
-            border-radius: 8px;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 16px;
+            font-family: 'Outfit', sans-serif;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             cursor: pointer;
-            transition: 0.2s;
+            transition: transform 0.1s, opacity 0.1s;
+            touch-action: manipulation;
         }
-
-        .btn:active {
-            transform: scale(0.95);
-        }
-
-        .btn-outline {
-            background: transparent;
-        }
-
+        .btn:active { transform: scale(0.94); opacity: 0.85; }
         .btn-primary {
-            background: var(--theme-glow);
-            color: #fff;
-            border-color: var(--theme-glow);
-            box-shadow: 0 0 15px var(--theme-color);
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-            transition: background 0.5s, border-color 0.5s, box-shadow 0.5s;
+            background: linear-gradient(135deg, var(--theme-color), var(--theme-glow));
+            color: white;
         }
-
+        .btn-outline {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: var(--text-main);
+        }
         .btn-danger {
-            background: #ff1432;
-            color: #fff;
-            border-color: #ff1432;
-            box-shadow: 0 0 15px rgba(255, 20, 50, 0.3);
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            background: rgba(255,50,50,0.12);
+            border: 1px solid rgba(255,80,80,0.35);
+            color: #ff7070;
         }
 
-        /* Modal Ajustes */
+        #test-controls { display: flex; gap: 8px; align-items: center; }
+        #edit-controls { display: none; gap: 7px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+
+        /* Modales */
         .settings-modal {
             position: absolute;
-            top: 60px;
-            right: 20px;
-            background: rgba(17, 21, 32, 0.95);
-            border: 1px solid var(--theme-glow);
-            border-radius: 12px;
-            padding: 15px;
+            top: 65px; right: 18px;
+            background: rgba(15,19,24,0.97);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 18px;
+            width: 240px;
+            z-index: 60;
+            backdrop-filter: blur(20px);
             display: none;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 200;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-            transition: border-color 0.5s;
         }
-
-        .settings-modal.active {
-            display: flex;
-        }
-
-        .settings-title {
-            font-size: 0.85rem;
-            font-weight: bold;
-            color: var(--theme-glow);
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            transition: color 0.5s;
-        }
-
-        .haptic-opts {
-            display: flex;
-            gap: 5px;
-        }
-
+        .settings-modal.active { display: block; }
+        .settings-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 14px; }
+        .haptic-opts { display: flex; gap: 8px; flex-wrap: wrap; }
         .opt-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid transparent;
-            color: #fff;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: var(--text-main);
+            border-radius: 8px;
             padding: 6px 12px;
-            border-radius: 6px;
+            font-family: 'Outfit', sans-serif;
             font-size: 0.8rem;
-            transition: background 0.3s, color 0.3s;
+            cursor: pointer;
         }
-
         .opt-btn.active {
-            background: var(--theme-glow);
-            color: #000;
-            font-weight: bold;
+            background: rgba(var(--rgb-glow),0.2);
+            border-color: var(--theme-glow);
+            color: var(--theme-accent);
         }
 
-        /* Panel Slider (Sin Vibraci├│n visual del texto) */
         .scale-panel {
             position: absolute;
-            bottom: 20px;
-            left: 50%;
+            bottom: 18px; left: 50%;
             transform: translateX(-50%);
-            background: rgba(10, 15, 25, 0.95);
-            padding: 15px 30px;
-            border-radius: 15px;
-            border: 2px solid var(--theme-glow);
+            background: rgba(15,19,24,0.95);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 12px 20px;
             display: none;
             align-items: center;
-            gap: 20px;
-            z-index: 999;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), inset 0 0 20px var(--theme-color);
+            gap: 14px;
+            z-index: 60;
             backdrop-filter: blur(10px);
-            transition: border-color 0.5s, box-shadow 0.5s;
         }
+        .scale-panel.active { display: flex; }
+        #size-slider { width: 130px; accent-color: var(--theme-glow); }
 
-        .scale-panel.active {
-            display: flex;
-            animation: slideUp 0.3s ease;
-        }
-
-        @keyframes slideUp {
-            from {
-                transform: translate(-50%, 20px);
-                opacity: 0;
-            }
-
-            to {
-                transform: translate(-50%, 0);
-                opacity: 1;
-            }
-        }
-
-        input[type=range] {
-            -webkit-appearance: none;
-            width: 180px;
-            background: rgba(255, 255, 255, 0.2);
-            height: 6px;
-            border-radius: 3px;
-        }
-
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background: var(--theme-glow);
-            box-shadow: 0 0 15px var(--theme-glow);
-            border: 2px solid #fff;
-            transition: background 0.5s, box-shadow 0.5s;
-        }
-
-        #scale-value {
-            color: var(--theme-glow);
-            font-weight: 900;
-            font-size: 1.1rem;
-            display: inline-block;
-            width: 48px;
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-            transition: color 0.5s;
-        }
-
-        /* =========================================
-           5. ELEMENTOS DEL GAMEPAD
-           ========================================= */
+        /* Gamepad area */
         .gamepad-container {
-            position: absolute;
-            top: 0;
-            left: 0;
+            position: relative;
             width: 100%;
             height: 100%;
-            z-index: 10;
         }
+        .editor-grid { display: none; }
 
         .gp-element {
             position: absolute;
             transform-origin: center center;
+            z-index: 20;
         }
-
-        .racing-el {
-            display: none;
-        }
-
-        .standard-el {
-            display: block;
-        }
-
-        body.theme-racing .standard-el {
-            display: none;
-        }
-
-        body.theme-racing .racing-el {
-            display: block;
-        }
-
-        .interactive-btn {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #aaa;
-            font-weight: bold;
-            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.05), 0 5px 10px rgba(0, 0, 0, 0.5);
-            transition: background 0.1s, transform 0.1s, box-shadow 0.1s, color 0.1s, border-color 0.1s;
-        }
-
-        .state-test .interactive-btn:active,
-        .state-test .interactive-btn.active,
-        .state-play .interactive-btn:active,
-        .state-play .interactive-btn.active {
-            transform: scale(0.9);
-            background: var(--theme-glow);
-            color: #000;
-            box-shadow: 0 0 20px var(--theme-glow);
-            border-color: #fff;
-        }
-
-        /* Joysticks */
-        .analog-stick {
-            width: 110px;
-            height: 110px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.5) 100%);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
-
-        .analog-thumb {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #444, #222);
-            border: 2px solid #666;
-            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5), inset 0 2px 5px rgba(255, 255, 255, 0.2);
-            position: absolute;
-            transition: transform 0.1s ease-out;
-        }
-
-        .analog-thumb.active-visual {
-            background: var(--theme-glow);
-            border-color: #fff;
-            transition: none;
-        }
-
-        /* D-PAD */
-        .dpad {
-            width: 120px;
-            height: 120px;
-            position: relative;
-        }
-
-        .d-btn {
-            position: absolute;
-            background: #1a1f2e;
-            border: 1px solid #2a3143;
-        }
-
-        .d-up {
-            top: 0;
-            left: 40px;
-            width: 40px;
-            height: 40px;
-            border-top-left-radius: 8px;
-            border-top-right-radius: 8px;
-            border-bottom: none;
-        }
-
-        .d-down {
-            top: 80px;
-            left: 40px;
-            width: 40px;
-            height: 40px;
-            border-bottom-left-radius: 8px;
-            border-bottom-right-radius: 8px;
-            border-top: none;
-        }
-
-        .d-left {
-            top: 40px;
-            left: 0;
-            width: 40px;
-            height: 40px;
-            border-top-left-radius: 8px;
-            border-bottom-left-radius: 8px;
-            border-right: none;
-        }
-
-        .d-right {
-            top: 40px;
-            left: 80px;
-            width: 40px;
-            height: 40px;
-            border-top-right-radius: 8px;
-            border-bottom-right-radius: 8px;
-            border-left: none;
-        }
-
-        .d-center {
-            top: 40px;
-            left: 40px;
-            width: 40px;
-            height: 40px;
-            background: #1f2536;
-            pointer-events: none;
-        }
-
-        /* BOTONES DE ACCI├ôN */
-        .act-btn {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: linear-gradient(145deg, #1f2536, #111520);
-            border: 2px solid #2a3143;
-            font-size: 1.15rem;
-        }
-
-        body.theme-ps .act-top {
-            color: #00e676;
-            border-color: rgba(0, 230, 118, 0.3);
-        }
-
-        body.theme-ps .act-bottom {
-            color: #2979ff;
-            border-color: rgba(41, 121, 255, 0.3);
-        }
-
-        body.theme-ps .act-left {
-            color: #ff4081;
-            border-color: rgba(255, 64, 129, 0.3);
-        }
-
-        body.theme-ps .act-right {
-            color: #ff1744;
-            border-color: rgba(255, 23, 68, 0.3);
-        }
-
-        body.theme-xbox .act-top {
-            color: #ffc107;
-            border-color: rgba(255, 193, 7, 0.3);
-        }
-
-        body.theme-xbox .act-bottom {
-            color: #00e676;
-            border-color: rgba(0, 230, 118, 0.3);
-        }
-
-        body.theme-xbox .act-left {
-            color: #2979ff;
-            border-color: rgba(41, 121, 255, 0.3);
-        }
-
-        body.theme-xbox .act-right {
-            color: #ff1744;
-            border-color: rgba(255, 23, 68, 0.3);
-        }
-
-        body.theme-generic .act-btn {
-            color: #ffae00;
-            border-color: rgba(255, 174, 0, 0.3);
-        }
-
-        .shoulder-group {
-            padding: 12px 28px;
-            background: linear-gradient(180deg, #2a3143, #151a25);
-            border-radius: 8px;
-            border: 1px solid #3d465c;
-            font-size: 0.9rem;
-            letter-spacing: 1px;
-        }
-
-        .stick-btn-group {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            font-size: 0.8rem;
-        }
-
-        /* RACING INDEPENDIENTES */
-        .pedal-btn {
-            background: linear-gradient(180deg, #222, #111);
-            border: 2px solid #444;
-            border-radius: 10px;
-        }
-
-        .pedal-gas {
-            width: 55px;
-            height: 90px;
-            border-radius: 10px;
-        }
-
-        .pedal-brake {
-            width: 65px;
-            height: 60px;
-            border-radius: 10px;
-        }
-
-        .gear-btn {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            background: #1a1f2e;
-            border: 2px solid #333;
-            font-size: 1.1rem;
-        }
-
-        .steer-btn {
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            background: #1a1f2e;
-            border: 2px solid #333;
-            font-size: 1.4rem;
-        }
-
-        .pedal-btn svg,
-        .handbrake-icon svg {
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        .pedal-gas svg {
-            width: 30px;
-            height: 50px;
-        }
-
-        .pedal-brake svg {
-            width: 35px;
-            height: 30px;
-        }
-
-        .handbrake-icon svg {
-            width: 28px;
-            height: 28px;
-        }
-
-        /* =========================================
-           6. ESTADOS DEL CONTENEDOR (EDIT MODE)
-           ========================================= */
-        .state-edit .editor-grid {
-            opacity: 0.5;
-        }
-
-        .state-edit .gp-element {
-            cursor: move;
-            border-radius: 10px;
-        }
-
+        .state-edit .gp-element { cursor: move; }
         .state-edit .gp-element.selected {
             outline: 2px dashed var(--theme-accent);
-            background: rgba(255, 255, 255, 0.05);
-            box-shadow: 0 0 15px var(--theme-color);
+            background: rgba(255,255,255,0.04);
+            box-shadow: 0 0 14px var(--theme-color);
+            border-radius: 10px;
         }
 
-        .state-play .top-toolbar {
-            transform: translateY(-100%);
-        }
+        .racing-el { display: none; }
+        .theme-racing .racing-el { display: block; }
+        .theme-racing .standard-el { display: block; }
 
-        .state-play .status-badge {
-            display: none;
-        }
-
-        /* =========================================
-           7. PANTALLA DE CONEXI├ôN Y ERRORES
-           ========================================= */
-        #screen-connect {
-            justify-content: center;
-            align-items: center;
-            background: var(--bg-dark);
-        }
-
-        .radar {
-            width: 180px;
-            height: 180px;
+        /* Analog stick */
+        .analog-stick {
+            width: 100px; height: 100px;
             border-radius: 50%;
-            border: 2px solid var(--theme-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 25px;
+            background: radial-gradient(circle at 40% 38%, rgba(255,255,255,0.08), rgba(0,0,0,0.4));
+            border: 2px solid rgba(255,255,255,0.12);
+            display: flex; align-items: center; justify-content: center;
             position: relative;
-            transition: border-color 0.5s, background 0.5s;
         }
-
-        .radar::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
+        .analog-thumb {
+            width: 44px; height: 44px;
             border-radius: 50%;
-            border: 2px solid var(--theme-glow);
-            animation: ping 1.5s infinite;
-            transition: border-color 0.5s;
+            background: radial-gradient(circle at 38% 36%, rgba(255,255,255,0.18), rgba(0,0,0,0.6));
+            border: 2px solid rgba(var(--rgb-glow),0.5);
+            box-shadow: 0 0 10px rgba(var(--rgb-glow),0.2);
+            transition: box-shadow 0.1s;
+            position: relative;
+        }
+        .analog-thumb.active-visual { box-shadow: 0 0 20px rgba(var(--rgb-glow),0.6); }
+
+        /* Buttons */
+        .act-btn {
+            width: 52px; height: 52px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.07);
+            border: 2px solid rgba(255,255,255,0.18);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; font-weight: 700; color: rgba(255,255,255,0.75);
+            transition: background 0.1s, box-shadow 0.1s, transform 0.08s;
+        }
+        .act-btn.active-visual, .interactive-btn.active {
+            background: rgba(var(--rgb-glow),0.3);
+            border-color: var(--theme-glow);
+            box-shadow: 0 0 16px rgba(var(--rgb-glow),0.5);
+            transform: scale(0.92);
         }
 
-        /* Estado ├ëxito */
-        .radar.success {
-            border-color: #00ff66;
-            background: rgba(0, 255, 102, 0.1);
+        .act-top    { border-color: rgba(0,180,255,0.5); color: rgba(0,180,255,0.9); }
+        .act-bottom { border-color: rgba(255,50,80,0.5); color: rgba(255,50,80,0.9); }
+        .act-left   { border-color: rgba(255,100,30,0.5); color: rgba(255,100,30,0.9); }
+        .act-right  { border-color: rgba(50,200,100,0.5); color: rgba(50,200,100,0.9); }
+
+        /* D-Pad */
+        .dpad { position: relative; width: 110px; height: 110px; }
+        .d-center {
+            position: absolute; left: 50%; top: 50%;
+            transform: translate(-50%,-50%);
+            width: 34px; height: 34px;
+            border-radius: 50%; background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1); z-index: 2;
+        }
+        .d-btn {
+            position: absolute; width: 36px; height: 36px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            display: flex; align-items: center; justify-content: center;
+            color: rgba(255,255,255,0.6); font-size: 0.8rem;
+            transition: background 0.1s, box-shadow 0.1s;
+        }
+        .d-up    { top: 0; left: 50%; transform: translateX(-50%); border-radius: 6px 6px 0 0; }
+        .d-down  { bottom: 0; left: 50%; transform: translateX(-50%); border-radius: 0 0 6px 6px; }
+        .d-left  { top: 50%; left: 0; transform: translateY(-50%); border-radius: 6px 0 0 6px; }
+        .d-right { top: 50%; right: 0; transform: translateY(-50%); border-radius: 0 6px 6px 0; }
+        .d-btn.active {
+            background: rgba(var(--rgb-glow),0.3);
+            box-shadow: 0 0 12px rgba(var(--rgb-glow),0.4);
         }
 
-        .radar.success::before {
-            display: none;
+        /* Shoulder / Trigger */
+        .shoulder-group, .stick-btn-group {
+            background: rgba(255,255,255,0.07);
+            border: 1.5px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            padding: 8px 18px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.75);
+            transition: background 0.1s, box-shadow 0.1s, transform 0.08s;
+        }
+        .stick-btn-group { border-radius: 50%; width: 40px; height: 40px; display:flex; align-items:center; justify-content:center; padding:0; }
+        .interactive-btn.active {
+            background: rgba(var(--rgb-glow),0.25);
+            border-color: var(--theme-glow);
+            box-shadow: 0 0 14px rgba(var(--rgb-glow),0.4);
+            transform: scale(0.93);
         }
 
-        .radar.success h2 {
-            color: #00ff66 !important;
+        /* Racing */
+        .steer-btn {
+            background: rgba(255,255,255,0.07);
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            width: 60px; height: 60px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; color: rgba(255,255,255,0.7);
+            transition: background 0.1s, transform 0.08s;
         }
-
-        /* Estado Error */
-        .radar.error {
-            border-color: #ff1432;
-            background: rgba(255, 20, 50, 0.1);
+        .pedal-btn {
+            width: 60px; height: 80px;
+            background: rgba(255,255,255,0.07);
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
         }
+        .pedal-btn svg { width: 28px; height: 28px; stroke: rgba(255,255,255,0.6); fill: none; }
+        .pedal-gas { border-color: rgba(var(--rgb-glow),0.4); }
 
-        .radar.error::before {
-            display: none;
-        }
-
-        .radar.error h2 {
-            color: #ff1432 !important;
-        }
-
-        .error-controls {
-            display: none;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .error-controls.active {
-            display: flex;
-        }
-
-        @keyframes ping {
-
-            75%,
-            100% {
-                transform: scale(1.5);
-                opacity: 0;
-            }
-        }
-
-        /* ========================================= */
-        /*  BLUETOOTH SCANNER SCREENS               */
-        /* ========================================= */
+        /* =====================================================
+           6. PANTALLA 3 - ESCANER BLUETOOTH
+           ===================================================== */
         #screen-connect {
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: stretch;
             background: var(--bg-dark);
             padding: 0;
         }
-        .scan-header { display:flex; align-items:center; gap:12px; padding:18px 20px 14px; border-bottom:1px solid rgba(255,255,255,0.07); flex-shrink:0; }
-        .scan-header .back-btn { background:none; border:1.5px solid rgba(255,255,255,0.2); color:white; width:38px; height:38px; border-radius:50%; font-size:1.2rem; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
-        .scan-header-info { flex:1; }
-        .scan-header-info h2 { font-size:1.1rem; font-weight:700; }
-        .scan-header-info p { font-size:0.75rem; color:var(--text-muted); margin-top:2px; }
-        .scan-status-dot { width:10px; height:10px; border-radius:50%; background:#888; flex-shrink:0; }
-        .scan-status-dot.scanning { background:var(--theme-glow); box-shadow:0 0 8px var(--theme-glow); animation:blink 1s infinite; }
+
+        .scan-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            flex-shrink: 0;
+        }
+        .scan-back-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1.5px solid rgba(255,255,255,0.15);
+            color: white;
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0;
+        }
+        .scan-header-info { flex: 1; }
+        .scan-header-info h2 { font-size: 1.05rem; font-weight: 700; }
+        .scan-header-info p { font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; }
+        .scan-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: #555;
+            flex-shrink: 0;
+            transition: background 0.3s;
+        }
+        .scan-dot.scanning {
+            background: var(--theme-glow);
+            box-shadow: 0 0 8px var(--theme-glow);
+            animation: blink 1s infinite;
+        }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        .scan-action-bar { display:flex; gap:10px; padding:12px 20px; flex-shrink:0; align-items:center; }
-        .scan-profile-badge { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:20px; padding:6px 14px; font-size:0.78rem; color:var(--theme-accent); font-weight:600; }
-        #scan-list-wrapper { flex:1; overflow-y:auto; padding:6px 14px 14px; }
-        .scan-section-title { font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:2px; padding:10px 6px 6px; font-weight:600; }
-        .device-item { display:flex; align-items:center; gap:14px; padding:13px 16px; border-radius:12px; border:1px solid rgba(255,255,255,0.07); background:rgba(255,255,255,0.03); margin-bottom:8px; cursor:pointer; }
-        .device-item.is-computer { border-color:rgba(var(--rgb-glow),0.4); background:rgba(var(--rgb-glow),0.06); }
-        .device-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; background:rgba(255,255,255,0.06); flex-shrink:0; }
-        .device-item.is-computer .device-icon { background:rgba(var(--rgb-glow),0.15); }
-        .device-info { flex:1; min-width:0; }
-        .device-name { font-size:0.92rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .device-mac { font-size:0.72rem; color:var(--text-muted); margin-top:2px; }
-        .device-badge { font-size:0.63rem; font-weight:700; text-transform:uppercase; padding:3px 8px; border-radius:6px; background:rgba(var(--rgb-glow),0.2); color:var(--theme-accent); flex-shrink:0; }
-        .scan-empty { text-align:center; color:var(--text-muted); padding:30px 20px; font-size:0.9rem; }
-        #screen-connecting { flex-direction:column; justify-content:center; align-items:center; gap:18px; background:var(--bg-dark); }
-        .connecting-spinner { width:60px; height:60px; border-radius:50%; border:3px solid rgba(255,255,255,0.1); border-top-color:var(--theme-glow); animation:spin 0.8s linear infinite; }
-        @keyframes spin { to { transform:rotate(360deg); } }
+
+        .scan-action-bar {
+            display: flex;
+            gap: 10px;
+            padding: 12px 20px;
+            flex-shrink: 0;
+            align-items: center;
+        }
+        .scan-badge {
+            background: rgba(var(--rgb-glow),0.1);
+            border: 1px solid rgba(var(--rgb-glow),0.25);
+            color: var(--theme-accent);
+            border-radius: 20px;
+            padding: 5px 14px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        #scan-list-wrapper { flex: 1; overflow-y: auto; padding: 6px 14px 14px; }
+        .scan-section-label {
+            font-size: 0.62rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            padding: 10px 6px 6px;
+            font-weight: 600;
+        }
+        .device-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 13px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.07);
+            background: rgba(255,255,255,0.02);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .device-row:active { background: rgba(var(--rgb-glow),0.08); border-color: rgba(var(--rgb-glow),0.35); }
+        .device-row.is-pc { border-color: rgba(var(--rgb-glow),0.3); background: rgba(var(--rgb-glow),0.05); }
+        .device-ico {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.06);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; flex-shrink: 0;
+        }
+        .device-row.is-pc .device-ico { background: rgba(var(--rgb-glow),0.12); }
+        .device-info-col { flex: 1; min-width: 0; }
+        .device-name { font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .device-mac  { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+        .device-pc-badge {
+            font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+            padding: 3px 8px; border-radius: 6px;
+            background: rgba(var(--rgb-glow),0.18);
+            color: var(--theme-accent); flex-shrink: 0;
+        }
+        .scan-empty {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 28px 20px;
+            font-size: 0.88rem;
+        }
+
+        /* =====================================================
+           7. PANTALLA 4 - CONECTANDO
+           ===================================================== */
+        #screen-connecting {
+            background: var(--bg-dark);
+            justify-content: center;
+            align-items: center;
+            gap: 18px;
+        }
+        .spinner {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.08);
+            border-top-color: var(--theme-glow);
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* =====================================================
+           8. ANIMACIONES GENERALES
+           ===================================================== */
+        @keyframes ping { 75%, 100% { transform: scale(1.5); opacity: 0; } }
     </style>
 </head>
 
 <body class="theme-init">
-
-    <!-- CANVAS PARA BRASAS DE FONDO -->
     <canvas id="bg-canvas"></canvas>
 
-    <!-- SCREEN 1: SELECCI├ôN -->
+    <!-- ============================================================
+         PANTALLA 1: SELECCION (PORTRAIT)
+    ============================================================ -->
     <div id="screen-selection" class="screen active">
-        <h1 class="header-title">GameBridge</h1>
+        <h1 class="header-title">GAME<span>BRIDGE</span></h1>
         <p class="header-subtitle">Selecciona tu Perfil</p>
 
         <div class="card-container">
-            <div class="controller-card ps" onclick="startSetup('ps')">
+
+            <div class="controller-card ps" id="card-ps" onclick="startSetup('ps')">
                 <div class="card-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path
-                            d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z">
-                        </path>
-                        <circle cx="9" cy="14" r="1.5"></circle>
-                        <circle cx="15" cy="14" r="1.5"></circle>
+                    <svg viewBox="0 0 24 24" stroke-width="1.5">
+                        <path d="M6 9h12a3 3 0 0 1 3 3v1a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-1a3 3 0 0 1 3-3z"/>
+                        <circle cx="8.5" cy="13" r="1.2"/>
+                        <circle cx="15.5" cy="13" r="1.2"/>
                     </svg>
                 </div>
                 <div class="card-title">PlayStation</div>
-                <div class="card-desc">Sim├®trico Azul</div>
+                <div class="card-desc">DualShock / DualSense</div>
             </div>
 
-            <div class="controller-card xbox" onclick="startSetup('xbox')">
+            <div class="controller-card xbox" id="card-xbox" onclick="startSetup('xbox')">
                 <div class="card-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path
-                            d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z">
-                        </path>
-                        <circle cx="7" cy="10" r="1.5"></circle>
-                        <circle cx="15" cy="14" r="1.5"></circle>
+                    <svg viewBox="0 0 24 24" stroke-width="1.5">
+                        <path d="M6 9h12a3 3 0 0 1 3 3v1a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-1a3 3 0 0 1 3-3z"/>
+                        <circle cx="7.5" cy="11" r="1.2"/>
+                        <circle cx="15.5" cy="13" r="1.2"/>
                     </svg>
                 </div>
                 <div class="card-title">Xbox</div>
-                <div class="card-desc">Asim├®trico Verde</div>
+                <div class="card-desc">Xbox Wireless Controller</div>
             </div>
 
-            <div class="controller-card generic" onclick="startSetup('generic')">
+            <div class="controller-card generic" id="card-generic" onclick="startSetup('generic')">
                 <div class="card-icon">
-                    <svg viewBox="0 0 24 24">
-                        <rect x="2" y="6" width="20" height="12" rx="6"></rect>
-                        <path d="M6 12h4"></path>
-                        <path d="M8 10v4"></path>
-                        <circle cx="16" cy="12" r="1.5"></circle>
-                        <circle cx="18" cy="10" r="1.5"></circle>
+                    <svg viewBox="0 0 24 24" stroke-width="1.5">
+                        <rect x="2" y="7" width="20" height="11" rx="5"/>
+                        <path d="M6 12h4M8 10v4"/>
+                        <circle cx="16" cy="12" r="1.3"/>
+                        <circle cx="18.5" cy="10" r="1.3"/>
                     </svg>
                 </div>
-                <div class="card-title">Gen├®rico</div>
-                <div class="card-desc">Est├índar Naranja</div>
+                <div class="card-title">Generico</div>
+                <div class="card-desc">Estandar HID</div>
             </div>
 
-            <div class="controller-card racing" onclick="startSetup('racing')">
+            <div class="controller-card racing" id="card-racing" onclick="startSetup('racing')">
                 <div class="card-icon">
-                    <svg viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <circle cx="12" cy="12" r="2"></circle>
-                        <path d="M12 14v8M4 9l7 4M20 9l-7 4"></path>
+                    <svg viewBox="0 0 24 24" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="9"/>
+                        <circle cx="12" cy="12" r="2.5"/>
+                        <path d="M12 14.5v5M5 9.5l6 3.5M19 9.5l-6 3.5"/>
                     </svg>
                 </div>
                 <div class="card-title">Carreras</div>
-                <div class="card-desc">Giroscopio & Pedales</div>
+                <div class="card-desc">Giroscopio &amp; Pedales</div>
             </div>
+
         </div>
 
         <div class="watermark">By <span>ElproFEsor</span></div>
     </div>
 
-    <!-- SCREEN 2: GAMEPAD -->
+    <!-- ============================================================
+         PANTALLA 2: GAMEPAD (LANDSCAPE - se activa al elegir mando)
+    ============================================================ -->
     <div id="screen-gamepad" class="screen">
         <div class="editor-grid" id="editor-grid"></div>
 
+        <!-- TOOLBAR -->
         <div class="top-toolbar" id="toolbar">
-            <button id="btn-back" onclick="goBackToSelection()" style="display:none;align-items:center;justify-content:center;background:none;border:1.5px solid rgba(255,255,255,0.2);color:white;width:36px;height:36px;border-radius:50%;font-size:1.1rem;cursor:pointer;flex-shrink:0;">&#8592;</button>
-            <div class="status-badge" id="hud-status"><span class="dot"></span> <span id="hud-title">Modo Prueba</span></div>
-            <div id="test-controls" style="display:flex;gap:10px;align-items:center;">
+            <button class="btn-back-circle" id="btn-back" onclick="goBackToSelection()" style="display:none;">&#8592;</button>
+            <div class="status-badge" id="hud-status">
+                <span class="dot"></span>
+                <span id="hud-title">Modo Prueba</span>
+            </div>
+            <div id="test-controls">
                 <button class="btn btn-outline" onclick="setMode('edit')">&#9881; Editar</button>
                 <button class="btn btn-primary" onclick="connectToPC()">Conectar &#10145;</button>
-                <button class="btn btn-outline" onclick="toggleSettings()" style="padding:6px 12px;border-radius:50%;">&#9881;</button>
+                <button class="btn btn-outline" id="btn-settings" onclick="toggleSettings()" style="padding:7px 12px; border-radius:50%;">&#9881;</button>
             </div>
-            <div id="edit-controls" style="display:none;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+            <div id="edit-controls">
                 <button class="btn btn-outline" onclick="resetLayoutToDefault()">&#8634; Restaurar</button>
                 <button class="btn btn-outline" onclick="openLoadModal()">Cargar</button>
                 <button class="btn btn-primary" onclick="openSaveModal()">&#10003; Guardar</button>
-                <button onclick="exitEditMode()" style="background:rgba(255,50,50,0.15);border:1px solid rgba(255,80,80,0.4);color:#ff7070;padding:7px 14px;border-radius:8px;font-size:0.82rem;cursor:pointer;">&#10006; Salir</button>
+                <button class="btn btn-danger" onclick="exitEditMode()">&#10006; Salir</button>
             </div>
         </div>
 
+        <!-- MODAL: VIBRACION -->
         <div class="settings-modal" id="settings-modal">
-            <div class="settings-title">Fuerza de Vibraci├│n</div>
+            <div class="settings-title">Fuerza de Vibracion</div>
             <div class="haptic-opts">
                 <button class="opt-btn" onclick="setHapticLvl(0)">OFF</button>
                 <button class="opt-btn" onclick="setHapticLvl(0.5)">Suave</button>
@@ -1005,32 +686,36 @@
             </div>
         </div>
 
+        <!-- MODAL: GUARDAR LAYOUT -->
         <div class="settings-modal" id="save-modal">
             <div class="settings-title">Guardar Layout</div>
-            <input type="text" id="layout-name-input" placeholder="Nombre (ej. Mi Config)" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:none; background:#333; color:white; font-size:1rem; outline:none; text-align:center;">
-            <div style="display:flex; justify-content:center; gap:10px;">
+            <input type="text" id="layout-name-input" placeholder="Nombre del perfil..." style="width:100%; padding:10px; margin-bottom:14px; border-radius:8px; border:none; background:#222; color:white; font-size:1rem; font-family:Outfit,sans-serif; outline:none; text-align:center;">
+            <div style="display:flex; gap:10px; justify-content:center;">
                 <button class="btn btn-outline" onclick="closeModals()">Cancelar</button>
-                <button class="btn btn-primary" onclick="saveLayoutAndExit()">Confirmar</button>
+                <button class="btn btn-primary" onclick="saveLayoutConfirm()">Confirmar</button>
             </div>
         </div>
 
-        <div class="settings-modal" id="load-modal" style="max-height: 60vh; overflow-y: auto;">
-            <div class="settings-title">Mis Layouts Guardados</div>
-            <div id="load-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;"></div>
-            <div style="display:flex; justify-content:center; gap:10px;">
+        <!-- MODAL: CARGAR LAYOUT -->
+        <div class="settings-modal" id="load-modal" style="max-height:60vh; overflow-y:auto;">
+            <div class="settings-title">Mis Layouts</div>
+            <div id="load-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;"></div>
+            <div style="display:flex; justify-content:center;">
                 <button class="btn btn-outline" onclick="closeModals()">Cerrar</button>
             </div>
         </div>
 
+        <!-- BARRA DE ESCALA -->
         <div class="scale-panel" id="scale-panel">
-            <span style="color:white; font-size:0.9rem; font-weight:bold;">TAMA├æO BOT├ôN:</span>
+            <span style="color:white; font-size:0.88rem; font-weight:700;">TAMANO:</span>
             <input type="range" id="size-slider" min="0.5" max="2" step="0.1" value="1">
             <span id="scale-value">1.0x</span>
         </div>
 
+        <!-- AREA DE GAMEPAD -->
         <div class="gamepad-container state-test" id="gamepad-area">
 
-            <!-- ====== EST├üNDAR ====== -->
+            <!-- === ELEMENTOS ESTANDAR === -->
             <div class="gp-element standard-el" id="el-lstick" data-id="lstick">
                 <div class="analog-stick">
                     <div class="analog-thumb" id="thumb-l"></div>
@@ -1043,29 +728,25 @@
             </div>
             <div class="gp-element standard-el" id="el-dpad" data-id="dpad">
                 <div class="dpad">
-                    <div class="d-btn d-center"></div>
-                    <div class="d-btn d-up interactive-btn">Ôû▓</div>
-                    <div class="d-btn d-down interactive-btn">Ôû╝</div>
-                    <div class="d-btn d-left interactive-btn">ÔùÇ</div>
-                    <div class="d-btn d-right interactive-btn">ÔûÂ</div>
+                    <div class="d-center"></div>
+                    <div class="d-btn d-up interactive-btn">&#9650;</div>
+                    <div class="d-btn d-down interactive-btn">&#9660;</div>
+                    <div class="d-btn d-left interactive-btn">&#9664;</div>
+                    <div class="d-btn d-right interactive-btn">&#9654;</div>
                 </div>
             </div>
 
-            <div class="gp-element standard-el" id="el-btn-top" data-id="btn-top">
-                <div class="act-btn act-top interactive-btn" id="lbl-top" style="position:relative; left:0; top:0;">Y
-                </div>
+            <div class="gp-element standard-el" id="el-btn-top"   data-id="btn-top">
+                <div class="act-btn act-top interactive-btn"   id="lbl-top"   style="position:relative;">Y</div>
             </div>
-            <div class="gp-element standard-el" id="el-btn-bot" data-id="btn-bot">
-                <div class="act-btn act-bottom interactive-btn" id="lbl-bot" style="position:relative; left:0; top:0;">A
-                </div>
+            <div class="gp-element standard-el" id="el-btn-bot"   data-id="btn-bot">
+                <div class="act-btn act-bottom interactive-btn" id="lbl-bot"  style="position:relative;">A</div>
             </div>
-            <div class="gp-element standard-el" id="el-btn-left" data-id="btn-left">
-                <div class="act-btn act-left interactive-btn" id="lbl-left" style="position:relative; left:0; top:0;">X
-                </div>
+            <div class="gp-element standard-el" id="el-btn-left"  data-id="btn-left">
+                <div class="act-btn act-left interactive-btn"  id="lbl-left"  style="position:relative;">X</div>
             </div>
             <div class="gp-element standard-el" id="el-btn-right" data-id="btn-right">
-                <div class="act-btn act-right interactive-btn" id="lbl-right" style="position:relative; left:0; top:0;">
-                    B</div>
+                <div class="act-btn act-right interactive-btn" id="lbl-right" style="position:relative;">B</div>
             </div>
 
             <div class="gp-element standard-el" id="el-l1" data-id="l1">
@@ -1087,499 +768,734 @@
                 <div class="stick-btn-group interactive-btn" id="lbl-r3">R3</div>
             </div>
 
-            <!-- ====== RACING ====== -->
+            <!-- === ELEMENTOS RACING === -->
             <div class="gp-element racing-el" id="el-steer-left" data-id="steer-left">
-                <div class="steer-btn interactive-btn">ÔùÇ</div>
+                <div class="steer-btn interactive-btn">&#9664;</div>
             </div>
             <div class="gp-element racing-el" id="el-steer-right" data-id="steer-right">
-                <div class="steer-btn interactive-btn">ÔûÂ</div>
+                <div class="steer-btn interactive-btn">&#9654;</div>
             </div>
-
             <div class="gp-element racing-el" id="el-gas" data-id="gas">
-                <div class="pedal-btn pedal-gas interactive-btn"><svg viewBox="0 0 24 24">
-                        <rect x="6" y="2" width="12" height="20" rx="2" />
-                        <line x1="10" y1="6" x2="14" y2="6" />
-                        <line x1="10" y1="12" x2="14" y2="12" />
-                        <line x1="10" y1="18" x2="14" y2="18" />
-                    </svg></div>
+                <div class="pedal-btn pedal-gas interactive-btn">
+                    <svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="10" y1="6" x2="14" y2="6"/></svg>
+                </div>
             </div>
             <div class="gp-element racing-el" id="el-brake" data-id="brake">
-                <div class="pedal-btn pedal-brake interactive-btn"><svg viewBox="0 0 24 24">
-                        <rect x="4" y="6" width="16" height="12" rx="2" />
-                        <line x1="8" y1="10" x2="16" y2="10" />
-                        <line x1="8" y1="14" x2="16" y2="14" />
-                    </svg></div>
-            </div>
-            <div class="gp-element racing-el" id="el-gear-up" data-id="gear-up">
-                <div class="gear-btn interactive-btn">Ôû│</div>
-            </div>
-            <div class="gp-element racing-el" id="el-gear-down" data-id="gear-down">
-                <div class="gear-btn interactive-btn">Ôû¢</div>
-            </div>
-
-            <div class="gp-element racing-el" id="el-handbrake" data-id="handbrake">
-                <div class="act-btn interactive-btn handbrake-icon"
-                    style="width: 55px; height: 55px; position:relative; top:0; left:0;"><svg viewBox="0 0 24 24">
-                        <path d="M12 22v-8" />
-                        <path d="M12 14c-2.5 0-6-2-6-6s3.5-6 6-6 6 2 6 6-3.5 6-6 6z" />
-                        <path d="M12 2v4" />
-                    </svg></div>
+                <div class="pedal-btn interactive-btn">
+                    <svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+                </div>
             </div>
             <div class="gp-element racing-el" id="el-nitrous" data-id="nitrous">
-                <div class="act-btn interactive-btn" style="position:relative; top:0; left:0;">N2O</div>
+                <div class="act-btn interactive-btn" style="position:relative;">N2O</div>
             </div>
             <div class="gp-element racing-el" id="el-cam" data-id="cam">
-                <div class="stick-btn-group interactive-btn">­ƒôÀ</div>
-            </div>
-            <div class="gp-element racing-el" id="el-horn" data-id="horn">
-                <div class="stick-btn-group interactive-btn">­ƒô»</div>
+                <div class="stick-btn-group interactive-btn">CAM</div>
             </div>
 
         </div>
     </div>
 
-    <!-- SCREEN 3: CONECTANDO CON MANEJO DE ERROR -->
-    <!-- SCREEN 3: BLUETOOTH SCANNER -->
+    <!-- ============================================================
+         PANTALLA 3: ESCANER BLUETOOTH
+    ============================================================ -->
     <div id="screen-connect" class="screen">
         <div class="scan-header">
-            <button class="back-btn" onclick="goBackToSelection()">&#8592;</button>
+            <button class="scan-back-btn" onclick="goBackToSelection()">&#8592;</button>
             <div class="scan-header-info">
-                <h2>Buscar PC &mdash; GameBridge</h2>
+                <h2>Buscar PC</h2>
                 <p id="scan-subtitle">Dispositivos al alcance</p>
             </div>
-            <div class="scan-status-dot" id="scan-dot"></div>
+            <div class="scan-dot" id="scan-dot"></div>
         </div>
+
         <div class="scan-action-bar">
-            <span class="scan-profile-badge" id="scan-profile-badge">Xbox</span>
-            <button class="btn btn-primary" onclick="startBluetoothScan()" style="font-size:0.82rem;padding:7px 16px;">&#128268; Buscar</button>
-            <button class="btn btn-outline" onclick="goBackToSelection()" style="font-size:0.82rem;padding:7px 16px;margin-left:auto;">&#10006; Cancelar</button>
+            <span class="scan-badge" id="scan-badge">Xbox</span>
+            <button class="btn btn-primary" onclick="startBluetoothScan()" style="font-size:0.82rem; padding:7px 16px;">Buscar</button>
+            <button class="btn btn-outline" onclick="goBackToSelection()" style="font-size:0.82rem; padding:7px 16px; margin-left:auto;">Cancelar</button>
         </div>
+
         <div id="scan-list-wrapper">
-            <div class="scan-section-title">COMPUTADORAS DETECTADAS</div>
-            <div id="scan-computers"><div class="scan-empty">Presiona "Buscar" para escanear...</div></div>
-            <div class="scan-section-title" id="scan-other-title" style="display:none;">OTROS DISPOSITIVOS</div>
+            <div class="scan-section-label">COMPUTADORAS DETECTADAS</div>
+            <div id="scan-computers">
+                <div class="scan-empty">Presiona "Buscar" para escanear...</div>
+            </div>
+            <div class="scan-section-label" id="scan-others-label" style="display:none;">OTROS DISPOSITIVOS</div>
             <div id="scan-others"></div>
         </div>
     </div>
 
-    <!-- SCREEN 4: CONNECTING -->
+    <!-- ============================================================
+         PANTALLA 4: CONECTANDO...
+    ============================================================ -->
     <div id="screen-connecting" class="screen">
-        <div class="connecting-spinner"></div>
-        <h2 id="connecting-title" style="font-size:1.1rem;">Conectando...</h2>
-        <p id="connecting-sub" style="color:var(--text-muted);font-size:0.85rem;">Acepta el emparejamiento en tu PC</p>
-        <button class="btn btn-outline" onclick="goBackToSelection()" style="margin-top:20px;">Cancelar</button>
+        <div class="spinner"></div>
+        <h2 id="conn-title" style="font-size:1.1rem; font-weight:700;">Conectando...</h2>
+        <p id="conn-sub" style="color:var(--text-muted); font-size:0.85rem; text-align:center; max-width:260px;">Acepta el emparejamiento en tu PC</p>
+        <button class="btn btn-outline" onclick="goBackToSelection()" style="margin-top:10px;">Cancelar</button>
     </div>
 
-    <!-- SCRIPTS -->
+    <!-- ============================================================
+         JAVASCRIPT
+    ============================================================ -->
     <script>
-        // --- 1. CONFIGURACIONES DE ALINEACI├ôN PERFECTA (M├üS AGRUPADOS Y CENTRADOS) ---
-        const defaultLayouts = {
-            ps: {
-                l2: { cx: 18, cy: 18, ox: 0, oy: 0, s: 1 }, r2: { cx: 82, cy: 18, ox: 0, oy: 0, s: 1 },
-                l1: { cx: 18, cy: 32, ox: 0, oy: 0, s: 1 }, r1: { cx: 82, cy: 32, ox: 0, oy: 0, s: 1 },
-                dpad: { cx: 18, cy: 60, ox: 0, oy: 0, s: 1.1 }, lstick: { cx: 35, cy: 72, ox: 0, oy: 0, s: 1 }, rstick: { cx: 65, cy: 72, ox: 0, oy: 0, s: 1 },
-                l3: { cx: 25, cy: 75, ox: 0, oy: 0, s: 0.9 }, r3: { cx: 75, cy: 75, ox: 0, oy: 0, s: 0.9 },
-                'btn-top': { cx: 82, cy: 60, ox: 0, oy: -48, s: 1.1 }, 'btn-bot': { cx: 82, cy: 60, ox: 0, oy: 48, s: 1.1 },
-                'btn-left': { cx: 82, cy: 60, ox: -48, oy: 0, s: 1.1 }, 'btn-right': { cx: 82, cy: 60, ox: 48, oy: 0, s: 1.1 }
-            },
-            xbox: {
-                l2: { cx: 18, cy: 18, ox: 0, oy: 0, s: 1 }, r2: { cx: 82, cy: 18, ox: 0, oy: 0, s: 1 },
-                l1: { cx: 18, cy: 32, ox: 0, oy: 0, s: 1 }, r1: { cx: 82, cy: 32, ox: 0, oy: 0, s: 1 },
-                lstick: { cx: 18, cy: 55, ox: 0, oy: 0, s: 1 }, dpad: { cx: 35, cy: 72, ox: 0, oy: 0, s: 1.1 }, rstick: { cx: 65, cy: 72, ox: 0, oy: 0, s: 1 },
-                l3: { cx: 28, cy: 55, ox: 0, oy: 0, s: 0.9 }, r3: { cx: 75, cy: 72, ox: 0, oy: 0, s: 0.9 },
-                'btn-top': { cx: 82, cy: 55, ox: 0, oy: -48, s: 1.1 }, 'btn-bot': { cx: 82, cy: 55, ox: 0, oy: 48, s: 1.1 },
-                'btn-left': { cx: 82, cy: 55, ox: -48, oy: 0, s: 1.1 }, 'btn-right': { cx: 82, cy: 55, ox: 48, oy: 0, s: 1.1 }
-            },
-            generic: {
-                l2: { cx: 18, cy: 18, ox: 0, oy: 0, s: 1 }, r2: { cx: 82, cy: 18, ox: 0, oy: 0, s: 1 },
-                l1: { cx: 18, cy: 32, ox: 0, oy: 0, s: 1 }, r1: { cx: 82, cy: 32, ox: 0, oy: 0, s: 1 },
-                dpad: { cx: 18, cy: 65, ox: 0, oy: 0, s: 1.2 }, lstick: { cx: 38, cy: 65, ox: 0, oy: 0, s: 1 },
-                rstick: { cx: -10, cy: -10, ox: 0, oy: 0, s: 0 }, l3: { cx: -10, cy: -10, ox: 0, oy: 0, s: 0 }, r3: { cx: -10, cy: -10, ox: 0, oy: 0, s: 0 },
-                'btn-top': { cx: 82, cy: 65, ox: 0, oy: -52, s: 1.2 }, 'btn-bot': { cx: 82, cy: 65, ox: 0, oy: 52, s: 1.2 },
-                'btn-left': { cx: 82, cy: 65, ox: -52, oy: 0, s: 1.2 }, 'btn-right': { cx: 82, cy: 65, ox: 52, oy: 0, s: 1.2 }
-            },
-            racing: {
-                'steer-left': { cx: 10, cy: 75, ox: 0, oy: 0, s: 1.1 }, 'steer-right': { cx: 22, cy: 75, ox: 0, oy: 0, s: 1.1 },
-                gas: { cx: 90, cy: 72, ox: 0, oy: 0, s: 1.2 }, brake: { cx: 78, cy: 75, ox: 0, oy: 0, s: 1.2 },
-                'gear-up': { cx: 85, cy: 50, ox: 0, oy: 0, s: 1 }, 'gear-down': { cx: 85, cy: 60, ox: 0, oy: 0, s: 1 },
-                handbrake: { cx: 90, cy: 35, ox: 0, oy: 0, s: 1.1 }, nitrous: { cx: 75, cy: 45, ox: 0, oy: 0, s: 1 },
-                cam: { cx: 15, cy: 20, ox: 0, oy: 0, s: 1.1 }, horn: { cx: 10, cy: 40, ox: 0, oy: 0, s: 1.1 }
-            }
-        };
+    // ============================================================
+    // ESTADO GLOBAL
+    // ============================================================
+    var currentType  = 'init';
+    var appState     = 'test';
+    var currentLayoutData = {};
+    var hapticLevel  = 1;
+    var currentRgbGlow = '139,92,246';
+    var activeElement = null;
+    var isDragging    = false;
+    var dragOffset    = { x: 0, y: 0 };
 
-        let currentType = 'init';
-        let appState = 'test';
-        let activeElement = null;
-        let currentRgbGlow = '170, 85, 255';
-
-        let hapticLvl = parseFloat(localStorage.getItem('gb_haptic_lvl')) ?? 1;
-        const setHapticLvl = (lvl) => { hapticLvl = lvl; localStorage.setItem('gb_haptic_lvl', lvl); document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active')); event.target.classList.add('active'); if (lvl > 0) navigator.vibrate(20 * lvl); };
-        const hapticUI = (ms = 10) => { if (navigator.vibrate && hapticLvl > 0) navigator.vibrate(ms * hapticLvl); };
-        
-        const closeModals = () => {
-            document.getElementById('settings-modal').classList.remove('active');
-            document.getElementById('save-modal').classList.remove('active');
-            document.getElementById('load-modal').classList.remove('active');
-        };
-
-        const toggleSettings = () => { 
-            closeModals(); 
-            document.getElementById('settings-modal').classList.toggle('active'); 
-        };
-        const showScreen = (id) => { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
-
-        // --- 2. SISTEMA DE PART├ìCULAS ---
-        const canvas = document.getElementById('bg-canvas'); const ctx = canvas.getContext('2d'); let particles = [];
-        const resizeCanvas = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
-        window.addEventListener('resize', resizeCanvas); resizeCanvas();
-
-        class Particle {
-            constructor() { this.reset(true); }
-            reset(randY = false) { this.x = Math.random() * canvas.width; this.y = randY ? Math.random() * canvas.height : canvas.height + Math.random() * 50; this.size = Math.random() * 2 + 0.5; this.speedY = -(Math.random() * 0.8 + 0.2); this.speedX = (Math.random() - 0.5) * 0.8; this.opacity = Math.random() * 0.5 + 0.1; }
-            update() { this.y += this.speedY; this.x += this.speedX; this.opacity -= 0.0015; if (this.y < -10 || this.opacity <= 0) this.reset(); }
-            draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fillStyle = `rgba(${currentRgbGlow}, ${this.opacity})`; ctx.fill(); }
+    // ============================================================
+    // LAYOUTS POR DEFECTO
+    // ============================================================
+    var defaultLayouts = {
+        ps: {
+            l2:       { cx:18, cy:18, ox:0, oy:0, s:1 },
+            r2:       { cx:82, cy:18, ox:0, oy:0, s:1 },
+            l1:       { cx:18, cy:30, ox:0, oy:0, s:1 },
+            r1:       { cx:82, cy:30, ox:0, oy:0, s:1 },
+            dpad:     { cx:20, cy:62, ox:0, oy:0, s:1.1 },
+            lstick:   { cx:36, cy:75, ox:0, oy:0, s:1 },
+            rstick:   { cx:64, cy:75, ox:0, oy:0, s:1 },
+            l3:       { cx:28, cy:78, ox:0, oy:0, s:0.85 },
+            r3:       { cx:72, cy:78, ox:0, oy:0, s:0.85 },
+            'btn-top':   { cx:80, cy:55, ox:0,   oy:-48, s:1.1 },
+            'btn-bot':   { cx:80, cy:55, ox:0,   oy:48,  s:1.1 },
+            'btn-left':  { cx:80, cy:55, ox:-48, oy:0,   s:1.1 },
+            'btn-right': { cx:80, cy:55, ox:48,  oy:0,   s:1.1 }
+        },
+        xbox: {
+            l2:       { cx:18, cy:18, ox:0, oy:0, s:1 },
+            r2:       { cx:82, cy:18, ox:0, oy:0, s:1 },
+            l1:       { cx:18, cy:30, ox:0, oy:0, s:1 },
+            r1:       { cx:82, cy:30, ox:0, oy:0, s:1 },
+            lstick:   { cx:20, cy:55, ox:0, oy:0, s:1 },
+            dpad:     { cx:36, cy:75, ox:0, oy:0, s:1.1 },
+            rstick:   { cx:64, cy:75, ox:0, oy:0, s:1 },
+            l3:       { cx:30, cy:58, ox:0, oy:0, s:0.85 },
+            r3:       { cx:72, cy:78, ox:0, oy:0, s:0.85 },
+            'btn-top':   { cx:80, cy:55, ox:0,   oy:-48, s:1.1 },
+            'btn-bot':   { cx:80, cy:55, ox:0,   oy:48,  s:1.1 },
+            'btn-left':  { cx:80, cy:55, ox:-48, oy:0,   s:1.1 },
+            'btn-right': { cx:80, cy:55, ox:48,  oy:0,   s:1.1 }
+        },
+        generic: {
+            l2:       { cx:18, cy:18, ox:0, oy:0, s:1 },
+            r2:       { cx:82, cy:18, ox:0, oy:0, s:1 },
+            l1:       { cx:18, cy:30, ox:0, oy:0, s:1 },
+            r1:       { cx:82, cy:30, ox:0, oy:0, s:1 },
+            dpad:     { cx:20, cy:62, ox:0, oy:0, s:1.1 },
+            lstick:   { cx:36, cy:75, ox:0, oy:0, s:1 },
+            rstick:   { cx:64, cy:75, ox:0, oy:0, s:1 },
+            l3:       { cx:28, cy:78, ox:0, oy:0, s:0.85 },
+            r3:       { cx:72, cy:78, ox:0, oy:0, s:0.85 },
+            'btn-top':   { cx:80, cy:55, ox:0,   oy:-48, s:1.1 },
+            'btn-bot':   { cx:80, cy:55, ox:0,   oy:48,  s:1.1 },
+            'btn-left':  { cx:80, cy:55, ox:-48, oy:0,   s:1.1 },
+            'btn-right': { cx:80, cy:55, ox:48,  oy:0,   s:1.1 }
+        },
+        racing: {
+            'steer-left':  { cx:20, cy:50, ox:0, oy:0, s:1.2 },
+            'steer-right': { cx:80, cy:50, ox:0, oy:0, s:1.2 },
+            l1: { cx:18, cy:20, ox:0, oy:0, s:1 },
+            r1: { cx:82, cy:20, ox:0, oy:0, s:1 },
+            l2: { cx:18, cy:32, ox:0, oy:0, s:1 },
+            r2: { cx:82, cy:32, ox:0, oy:0, s:1 },
+            gas:     { cx:80, cy:72, ox:0, oy:0, s:1.2 },
+            brake:   { cx:65, cy:78, ox:0, oy:0, s:1.1 },
+            nitrous: { cx:50, cy:82, ox:0, oy:0, s:1 },
+            cam:     { cx:50, cy:18, ox:0, oy:0, s:0.9 },
+            lstick:  { cx:35, cy:60, ox:0, oy:0, s:1 },
+            rstick:  { cx:65, cy:60, ox:0, oy:0, s:1 },
+            dpad:    { cx:20, cy:72, ox:0, oy:0, s:1 },
+            l3:      { cx:30, cy:70, ox:0, oy:0, s:0.8 },
+            r3:      { cx:70, cy:70, ox:0, oy:0, s:0.8 },
+            'btn-top':   { cx:85, cy:45, ox:0,   oy:-40, s:1 },
+            'btn-bot':   { cx:85, cy:45, ox:0,   oy:40,  s:1 },
+            'btn-left':  { cx:85, cy:45, ox:-40, oy:0,   s:1 },
+            'btn-right': { cx:85, cy:45, ox:40,  oy:0,   s:1 }
         }
-        for (let i = 0; i < 60; i++) particles.push(new Particle());
-        const animateParticles = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); particles.forEach(p => { p.update(); p.draw(); }); requestAnimationFrame(animateParticles); };
-        animateParticles();
+    };
 
-        // --- 3. GESTI├ôN DE LAYOUTS ---
-        const startSetup = (type) => {
-            hapticUI(30); currentType = type; document.body.className = `theme-${type}`;
-            setTimeout(() => { currentRgbGlow = getComputedStyle(document.body).getPropertyValue('--rgb-glow').trim() || '255,255,255'; }, 50);
-            // Notify native: set profile and rotate to landscape
-            if (window.AndroidBridge) {
-                window.AndroidBridge.setConfig(type);
-                window.AndroidBridge.setOrientation(true);
+    // ============================================================
+    // UTILIDADES
+    // ============================================================
+    function showScreen(id) {
+        var screens = document.querySelectorAll('.screen');
+        for (var i = 0; i < screens.length; i++) {
+            screens[i].classList.remove('active');
+        }
+        document.getElementById(id).classList.add('active');
+    }
+
+    function hapticUI(pattern) {
+        if (!window.navigator || !window.navigator.vibrate) return;
+        var p = Array.isArray(pattern) ? pattern : [pattern * hapticLevel];
+        navigator.vibrate(p);
+    }
+
+    function closeModals() {
+        var ids = ['settings-modal', 'save-modal', 'load-modal'];
+        for (var i = 0; i < ids.length; i++) {
+            var el = document.getElementById(ids[i]);
+            if (el) el.classList.remove('active');
+        }
+    }
+
+    function toggleSettings() {
+        closeModals();
+        document.getElementById('settings-modal').classList.toggle('active');
+    }
+
+    function setHapticLvl(lvl) {
+        hapticLevel = lvl;
+        var btns = document.querySelectorAll('.opt-btn');
+        for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+        event.target.classList.add('active');
+        hapticUI(30);
+    }
+
+    // ============================================================
+    // SISTEMA DE PARTICULAS (FONDO)
+    // ============================================================
+    var canvas = document.getElementById('bg-canvas');
+    var ctx = canvas.getContext('2d');
+    var particles = [];
+
+    function resizeCanvas() {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function Particle() { this.reset(true); }
+    Particle.prototype.reset = function(randY) {
+        this.x = Math.random() * canvas.width;
+        this.y = randY ? Math.random() * canvas.height : canvas.height + 10;
+        this.size   = Math.random() * 1.8 + 0.4;
+        this.speedY = -(Math.random() * 0.7 + 0.2);
+        this.speedX = (Math.random() - 0.5) * 0.6;
+        this.opacity = Math.random() * 0.45 + 0.1;
+    };
+    Particle.prototype.update = function() {
+        this.y += this.speedY; this.x += this.speedX; this.opacity -= 0.0012;
+        if (this.y < -10 || this.opacity <= 0) this.reset(false);
+    };
+    Particle.prototype.draw = function() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(' + currentRgbGlow + ',' + this.opacity + ')';
+        ctx.fill();
+    };
+
+    for (var p = 0; p < 55; p++) particles.push(new Particle());
+
+    function animateParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (var i = 0; i < particles.length; i++) { particles[i].update(); particles[i].draw(); }
+        requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // ============================================================
+    // LAYOUT: CARGA Y GUARDADO
+    // ============================================================
+    function loadLayout() {
+        var saved = localStorage.getItem('gb_layout_' + currentType);
+        var data  = saved ? JSON.parse(saved) : defaultLayouts[currentType];
+        if (!data) return;
+        currentLayoutData = JSON.parse(JSON.stringify(data));
+        applyLayout(currentLayoutData);
+    }
+
+    function applyLayout(data) {
+        var elements = document.querySelectorAll('.gp-element');
+        var W = window.innerWidth, H = window.innerHeight;
+        for (var i = 0; i < elements.length; i++) {
+            var el  = elements[i];
+            var key = el.dataset.id;
+            var d   = data[key];
+            if (!d) continue;
+            var cx = (d.cx / 100) * W + (d.ox || 0);
+            var cy = (d.cy / 100) * H + (d.oy || 0);
+            var hw = el.offsetWidth / 2, hh = el.offsetHeight / 2;
+            el.style.left = (cx - hw) + 'px';
+            el.style.top  = (cy - hh) + 'px';
+            el.style.transform = 'scale(' + (d.s || 1) + ')';
+            el.dataset.scale = d.s || 1;
+        }
+    }
+
+    function resetLayoutToDefault() {
+        hapticUI(20);
+        currentLayoutData = JSON.parse(JSON.stringify(defaultLayouts[currentType]));
+        applyLayout(currentLayoutData);
+    }
+
+    function openSaveModal() {
+        hapticUI(15);
+        closeModals();
+        document.getElementById('layout-name-input').value = '';
+        document.getElementById('save-modal').classList.add('active');
+    }
+
+    function saveLayoutConfirm() {
+        var name = (document.getElementById('layout-name-input').value || '').trim();
+        if (!name) {
+            document.getElementById('layout-name-input').placeholder = 'Ingresa un nombre!';
+            return;
+        }
+
+        // Capture current positions
+        var elements = document.querySelectorAll('.gp-element');
+        var W = window.innerWidth, H = window.innerHeight;
+        var snapshot = {};
+        for (var i = 0; i < elements.length; i++) {
+            var el   = elements[i];
+            var rect = el.getBoundingClientRect();
+            var cx   = ((rect.left + rect.width  / 2) / W) * 100;
+            var cy   = ((rect.top  + rect.height / 2) / H) * 100;
+            snapshot[el.dataset.id] = { cx: cx, cy: cy, ox: 0, oy: 0, s: parseFloat(el.dataset.scale) || 1 };
+        }
+
+        // Save to localStorage
+        var list = JSON.parse(localStorage.getItem('gb_layouts') || '{}');
+        list[name + '_' + currentType] = { type: currentType, data: snapshot, name: name };
+        localStorage.setItem('gb_layouts', JSON.stringify(list));
+        localStorage.setItem('gb_layout_' + currentType, JSON.stringify(snapshot));
+
+        hapticUI([20, 50]);
+        closeModals();
+        setMode('test');
+    }
+
+    function openLoadModal() {
+        hapticUI(15);
+        closeModals();
+        var list = JSON.parse(localStorage.getItem('gb_layouts') || '{}');
+        var container = document.getElementById('load-list');
+        container.innerHTML = '';
+
+        var keys = Object.keys(list).filter(function(k) { return list[k].type === currentType; });
+        if (keys.length === 0) {
+            container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:16px 0;">No hay layouts guardados</div>';
+        } else {
+            for (var i = 0; i < keys.length; i++) {
+                (function(key) {
+                    var row = document.createElement('div');
+                    row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid rgba(255,255,255,0.08);';
+                    var nameEl = document.createElement('span');
+                    nameEl.textContent = list[key].name;
+                    nameEl.style.fontWeight = '600';
+                    var btns = document.createElement('div');
+                    btns.style.cssText = 'display:flex; gap:8px;';
+
+                    var btnLoad = document.createElement('button');
+                    btnLoad.textContent = 'Cargar';
+                    btnLoad.className = 'btn btn-primary';
+                    btnLoad.style.fontSize = '0.75rem';
+                    btnLoad.onclick = function() {
+                        currentLayoutData = JSON.parse(JSON.stringify(list[key].data));
+                        applyLayout(currentLayoutData);
+                        closeModals();
+                        setMode('test');
+                        hapticUI(30);
+                    };
+
+                    var btnDel = document.createElement('button');
+                    btnDel.textContent = 'X';
+                    btnDel.className = 'btn btn-danger';
+                    btnDel.style.fontSize = '0.75rem';
+                    btnDel.onclick = function() {
+                        var l2 = JSON.parse(localStorage.getItem('gb_layouts') || '{}');
+                        delete l2[key];
+                        localStorage.setItem('gb_layouts', JSON.stringify(l2));
+                        openLoadModal();
+                    };
+
+                    btns.appendChild(btnLoad);
+                    btns.appendChild(btnDel);
+                    row.appendChild(nameEl);
+                    row.appendChild(btns);
+                    container.appendChild(row);
+                })(keys[i]);
             }
+        }
+        document.getElementById('load-modal').classList.add('active');
+    }
 
-            if (type !== 'racing') {
-                const labels = { ps: ['Ôû│', 'Ô£ò', 'Ôù╗', 'Ôù»', 'L1', 'R1', 'L2', 'R2', 'L3', 'R3'], xbox: ['Y', 'A', 'X', 'B', 'LB', 'RB', 'LT', 'RT', 'LS', 'RS'], generic: ['1', '2', '3', '4', 'L', 'R', 'ZL', 'ZR', 'LC', 'RC'] }[type];
-                ['top', 'bot', 'left', 'right', 'l1', 'r1', 'l2', 'r2', 'l3', 'r3'].forEach((id, i) => document.getElementById(`lbl-${id}`).innerText = labels[i]);
+    // ============================================================
+    // FLUJO PRINCIPAL: INICIO DE PERFIL
+    // ============================================================
+    function startSetup(type) {
+        hapticUI(30);
+        currentType = type;
+        document.body.className = 'theme-' + type;
+
+        // Update particle color for new theme
+        setTimeout(function() {
+            var v = getComputedStyle(document.body).getPropertyValue('--rgb-glow').trim();
+            if (v) currentRgbGlow = v;
+        }, 60);
+
+        // Label buttons
+        if (type !== 'racing') {
+            var labels = {
+                ps:      ['\u25b3', '\u2715', '\u25fb', '\u25ef', 'L1', 'R1', 'L2', 'R2', 'L3', 'R3'],
+                xbox:    ['Y', 'A', 'X', 'B', 'LB', 'RB', 'LT', 'RT', 'LS', 'RS'],
+                generic: ['1', '2', '3', '4', 'L', 'R', 'ZL', 'ZR', 'LC', 'RC']
+            }[type];
+            var ids = ['top','bot','left','right','l1','r1','l2','r2','l3','r3'];
+            for (var i = 0; i < ids.length; i++) {
+                var el = document.getElementById('lbl-' + ids[i]);
+                if (el) el.textContent = labels[i];
             }
-            loadLayout(); setMode('test'); showScreen('screen-gamepad');
-        };
+        }
 
-        const applyLayoutData = (layoutData) => {
-            Object.keys(layoutData).forEach(key => {
-                const el = document.getElementById(`el-${key}`);
-                if (el) {
-                    el.style.left = `calc(${layoutData[key].cx}vw + ${layoutData[key].ox}px - ${el.offsetWidth / 2}px)`;
-                    el.style.top = `calc(${layoutData[key].cy}vh + ${layoutData[key].oy}px - ${el.offsetHeight / 2}px)`;
-                    el.style.transform = `scale(${layoutData[key].s})`;
-                    el.dataset.scale = layoutData[key].s;
-                }
-            });
-        };
+        // Show/hide racing vs standard elements
+        var stdEls   = document.querySelectorAll('.standard-el');
+        var raceEls  = document.querySelectorAll('.racing-el');
+        for (var s = 0; s < stdEls.length; s++)  stdEls[s].style.display  = (type === 'racing') ? '' : '';
+        for (var r = 0; r < raceEls.length; r++) raceEls[r].style.display = (type === 'racing') ? '' : 'none';
 
-        const loadLayout = () => {
-            const savedLists = JSON.parse(localStorage.getItem('gb_layouts_list') || '{}');
-            const defaultSaved = savedLists[`default_${currentType}`];
-            if (defaultSaved) applyLayoutData(defaultSaved); 
-            else applyLayoutData(defaultLayouts[currentType]);
-        };
+        // Notify native bridge
+        if (window.AndroidBridge) {
+            window.AndroidBridge.setConfig(type);
+            window.AndroidBridge.setOrientation(true); // landscape
+        }
 
-        const loadSpecificLayout = (name) => {
-            hapticUI(20);
-            const savedLists = JSON.parse(localStorage.getItem('gb_layouts_list') || '{}');
-            if (savedLists[name]) applyLayoutData(savedLists[name].data);
-            closeModals();
-        };
+        // Load layout and go to gamepad screen
+        setMode('test');
+        loadLayout();
+        showScreen('screen-gamepad');
+    }
 
-        const openLoadModal = () => {
-            hapticUI(15);
-            closeModals();
-            const listContainer = document.getElementById('load-list');
-            listContainer.innerHTML = '';
-            const savedLists = JSON.parse(localStorage.getItem('gb_layouts_list') || '{}');
-            
-            const keys = Object.keys(savedLists).filter(k => savedLists[k].type === currentType);
-            if (keys.length === 0) {
-                listContainer.innerHTML = '<span style="color:#aaa; text-align:center;">No hay layouts guardados para este mando</span>';
-            } else {
-                keys.forEach(k => {
-                    const btn = document.createElement('button');
-                    btn.className = 'btn btn-outline';
-                    btn.style.width = '100%';
-                    btn.innerHTML = k;
-                    btn.onclick = () => loadSpecificLayout(k);
-                    listContainer.appendChild(btn);
-                });
-            }
-            document.getElementById('load-modal').classList.add('active');
-        };
+    // ============================================================
+    // MODOS: test / edit / play
+    // ============================================================
+    function setMode(mode) {
+        hapticUI(15);
+        appState = mode;
+        document.getElementById('gamepad-area').className = 'gamepad-container state-' + mode;
+        deselectElement();
+        closeModals();
 
-        const openSaveModal = () => {
-            hapticUI(15);
-            closeModals();
-            document.getElementById('layout-name-input').value = `Layout ${Math.floor(Math.random()*1000)}`;
-            document.getElementById('save-modal').classList.add('active');
-        };
+        var backBtn = document.getElementById('btn-back');
+        var testCtrl = document.getElementById('test-controls');
+        var editCtrl = document.getElementById('edit-controls');
 
-        const resetLayoutToDefault = () => { hapticUI(20); applyLayoutData(defaultLayouts[currentType]); deselectElement(); };
+        if (mode === 'test') {
+            document.getElementById('hud-title').textContent = 'Modo Prueba';
+            testCtrl.style.display = 'flex';
+            editCtrl.style.display = 'none';
+            if (backBtn) backBtn.style.display = 'flex';
+        } else if (mode === 'edit') {
+            document.getElementById('hud-title').textContent = 'Editor HUD';
+            testCtrl.style.display = 'none';
+            editCtrl.style.display = 'flex';
+            if (backBtn) backBtn.style.display = 'none';
+        } else if (mode === 'play') {
+            if (backBtn) backBtn.style.display = 'none';
+        }
+    }
 
-        const saveLayoutAndExit = () => {
-            const nameInput = document.getElementById('layout-name-input').value.trim();
-            if (!nameInput) return;
-            
-            const currentLayoutData = {};
-            document.querySelectorAll('.gp-element').forEach(el => {
-                const rect = el.getBoundingClientRect();
-                const xVw = ((rect.left + rect.width / 2) / window.innerWidth) * 100;
-                const yVh = ((rect.top + rect.height / 2) / window.innerHeight) * 100;
-                currentLayoutData[el.dataset.id] = { cx: xVw, cy: yVh, ox: 0, oy: 0, s: parseFloat(el.dataset.scale) || 1 };
-            });
-            
-            const savedLists = JSON.parse(localStorage.getItem('gb_layouts_list') || '{}');
-            savedLists[nameInput] = { type: currentType, data: currentLayoutData };
-            savedLists[`default_${currentType}`] = currentLayoutData; // Default load slot
-            localStorage.setItem('gb_layouts_list', JSON.stringify(savedLists));
-            
-            closeModals();
-            hapticUI([20, 40]); setMode('test');
-        };
+    function exitEditMode() { hapticUI(20); setMode('test'); }
 
-        const closeModals = () => {
-            const ids = ['settings-modal', 'save-modal', 'load-modal'];
-            ids.forEach(id => { const el = document.getElementById(id); if(el) el.classList.remove('active'); });
-        };
+    function goBackToSelection() {
+        hapticUI(30);
+        if (window.AndroidBridge) {
+            try { window.AndroidBridge.detenerEscaneo(); } catch(e) {}
+            window.AndroidBridge.setOrientation(false); // portrait
+        }
+        currentType = 'init';
+        document.body.className = 'theme-init';
+        setMode('test');
+        showScreen('screen-selection');
+    }
 
-        const setMode = (mode) => {
-            hapticUI(15); appState = mode;
-            document.getElementById('gamepad-area').className = `gamepad-container state-${mode}`;
-            deselectElement(); closeModals();
+    // ============================================================
+    // DRAG & DROP Y ESCALA
+    // ============================================================
+    function deselectElement() {
+        if (activeElement) {
+            activeElement.classList.remove('selected');
+            activeElement = null;
+        }
+        document.getElementById('scale-panel').classList.remove('active');
+    }
 
-            const backBtn = document.getElementById('btn-back');
-            if (mode === 'test') {
-                document.getElementById('hud-title').innerText = 'Modo Prueba';
-                document.getElementById('test-controls').style.display = 'flex';
-                document.getElementById('edit-controls').style.display = 'none';
-                if (backBtn) backBtn.style.display = 'flex';
-            } else if (mode === 'edit') {
-                document.getElementById('hud-title').innerText = 'Editor HUD';
-                document.getElementById('test-controls').style.display = 'none';
-                document.getElementById('edit-controls').style.display = 'flex';
-                if (backBtn) backBtn.style.display = 'none';
-            } else if (mode === 'play') {
-                if (backBtn) backBtn.style.display = 'none';
-            }
-        };
+    (function setupDragAndScale() {
+        var elements = document.querySelectorAll('.gp-element');
+        var scalePanel = document.getElementById('scale-panel');
+        var slider     = document.getElementById('size-slider');
+        var scaleValue = document.getElementById('scale-value');
+        var gamepadArea = document.getElementById('gamepad-area');
 
-        const exitEditMode = () => { hapticUI(20); setMode('test'); };
+        for (var i = 0; i < elements.length; i++) {
+            (function(el) {
+                el.addEventListener('touchstart', function(e) {
+                    if (appState !== 'edit') return;
+                    e.preventDefault(); e.stopPropagation();
+                    hapticUI(15); deselectElement();
+                    activeElement = el;
+                    el.classList.add('selected');
+                    scalePanel.classList.add('active');
+                    slider.value = el.dataset.scale || 1;
+                    scaleValue.textContent = parseFloat(slider.value).toFixed(1) + 'x';
+                    var touch = e.touches[0], rect = el.getBoundingClientRect();
+                    dragOffset.x = touch.clientX - (rect.left + rect.width  / 2);
+                    dragOffset.y = touch.clientY - (rect.top  + rect.height / 2);
+                    isDragging = true;
+                }, { passive: false });
+            })(elements[i]);
+        }
 
-        const goBackToSelection = () => {
-            hapticUI(30);
-            if (window.AndroidBridge) {
-                try { window.AndroidBridge.detenerEscaneo(); } catch(e){}
-                window.AndroidBridge.setOrientation(false);
-            }
-            setMode('test');
-            showScreen('screen-selection');
-            currentType = 'init';
-            document.body.className = 'theme-init';
-        };
-
-
-        // --- 4. DRAG & DROP Y ESCALADO ---
-        const gamepadArea = document.getElementById('gamepad-area');
-        const elements = document.querySelectorAll('.gp-element');
-        const scalePanel = document.getElementById('scale-panel');
-        const slider = document.getElementById('size-slider');
-        const scaleValue = document.getElementById('scale-value');
-
-        let isDragging = false; let dragOffset = { x: 0, y: 0 };
-        const deselectElement = () => { elements.forEach(el => el.classList.remove('selected')); scalePanel.classList.remove('active'); activeElement = null; };
-
-        elements.forEach(el => {
-            el.addEventListener('touchstart', (e) => {
-                if (appState !== 'edit') return;
-                e.preventDefault(); e.stopPropagation(); hapticUI(15); deselectElement();
-
-                activeElement = el; el.classList.add('selected'); scalePanel.classList.add('active');
-                slider.value = el.dataset.scale || 1;
-                scaleValue.innerText = `${parseFloat(slider.value).toFixed(1)}x`;
-
-                const touch = e.touches[0]; const rect = el.getBoundingClientRect();
-                dragOffset.x = touch.clientX - (rect.left + rect.width / 2); dragOffset.y = touch.clientY - (rect.top + rect.height / 2);
-                isDragging = true;
-            }, { passive: false });
-        });
-
-        document.addEventListener('touchmove', (e) => {
+        document.addEventListener('touchmove', function(e) {
             if (!isDragging || !activeElement || appState !== 'edit') return;
-            e.preventDefault(); const touch = e.touches[0];
-            activeElement.style.left = `${touch.clientX - dragOffset.x - activeElement.offsetWidth / 2}px`;
-            activeElement.style.top = `${touch.clientY - dragOffset.y - activeElement.offsetHeight / 2}px`;
+            e.preventDefault();
+            var touch = e.touches[0];
+            activeElement.style.left = (touch.clientX - dragOffset.x - activeElement.offsetWidth  / 2) + 'px';
+            activeElement.style.top  = (touch.clientY - dragOffset.y - activeElement.offsetHeight / 2) + 'px';
         }, { passive: false });
-        document.addEventListener('touchend', () => { if (isDragging) { hapticUI(10); isDragging = false; } });
 
-        slider.addEventListener('input', (e) => {
+        document.addEventListener('touchend', function() { if (isDragging) { hapticUI(10); isDragging = false; } });
+
+        slider.addEventListener('input', function(e) {
             if (!activeElement) return;
-            scaleValue.innerText = `${parseFloat(e.target.value).toFixed(1)}x`;
-            activeElement.style.transform = `scale(${e.target.value})`;
-            activeElement.dataset.scale = e.target.value;
+            var v = parseFloat(e.target.value);
+            scaleValue.textContent = v.toFixed(1) + 'x';
+            activeElement.style.transform = 'scale(' + v + ')';
+            activeElement.dataset.scale = v;
         });
 
-        gamepadArea.addEventListener('touchstart', (e) => { if (appState === 'edit' && e.target === gamepadArea) deselectElement(); });
-
-        // --- 5. F├ìSICA ANAL├ôGICA ---
-        const setupAnalogStick = (baseId, thumbId) => {
-            const base = document.getElementById(baseId); const thumb = document.getElementById(thumbId);
-            if (!base || !thumb) return;
-            let stickActive = false; let touchId = null; const maxRadius = 35;
-
-            base.addEventListener('touchstart', (e) => {
-                if (appState === 'edit') return;
-                e.preventDefault(); e.stopPropagation(); hapticUI(15);
-                const touch = e.changedTouches[0]; touchId = touch.identifier; stickActive = true;
-                thumb.classList.add('active-visual'); updateStickPosition(touch.clientX, touch.clientY);
-            }, { passive: false });
-
-            const updateStickPosition = (clientX, clientY) => {
-                const rect = base.getBoundingClientRect();
-                let dx = clientX - (rect.left + rect.width / 2); let dy = clientY - (rect.top + rect.height / 2);
-                let distance = Math.hypot(dx, dy);
-                if (distance > maxRadius) { dx = (dx / distance) * maxRadius; dy = (dy / distance) * maxRadius; }
-                thumb.style.transform = `translate(${dx}px, ${dy}px)`;
-            };
-
-            base.addEventListener('touchmove', (e) => {
-                if (!stickActive || appState === 'edit') return;
-                e.preventDefault();
-                for (let i = 0; i < e.changedTouches.length; i++) { if (e.changedTouches[i].identifier === touchId) { updateStickPosition(e.changedTouches[i].clientX, e.changedTouches[i].clientY); break; } }
-            }, { passive: false });
-
-            const releaseStick = () => { stickActive = false; touchId = null; thumb.style.transform = `translate(0px, 0px)`; thumb.classList.remove('active-visual'); };
-            base.addEventListener('touchend', (e) => { for (let i = 0; i < e.changedTouches.length; i++) { if (e.changedTouches[i].identifier === touchId) releaseStick(); } });
-            base.addEventListener('touchcancel', releaseStick);
-        };
-        setupAnalogStick('el-lstick', 'thumb-l'); setupAnalogStick('el-rstick', 'thumb-r');
-
-        // --- 6. BOTONES SIMPLES ---
-        document.querySelectorAll('.interactive-btn').forEach(btn => {
-            btn.addEventListener('touchstart', (e) => { if (appState === 'edit') return; e.preventDefault(); e.stopPropagation(); hapticUI(20); btn.classList.add('active'); }, { passive: false });
-            btn.addEventListener('touchend', (e) => { if (appState === 'edit') return; e.preventDefault(); btn.classList.remove('active'); }, { passive: false });
-            btn.addEventListener('touchcancel', () => btn.classList.remove('active'));
+        gamepadArea.addEventListener('touchstart', function(e) {
+            if (appState === 'edit' && e.target === gamepadArea) deselectElement();
         });
+    })();
 
-        // --- 7. CONEXI├ôN CON MANEJO DE ERROR ---
-        // --- 7. BLUETOOTH SCANNER ---
-        const connectToPC = () => {
-            hapticUI(40);
-            closeModals();
-            const names = { ps: 'PlayStation', xbox: 'Xbox', generic: 'Generico', racing: 'Carreras' };
-            const badge = document.getElementById('scan-profile-badge');
-            if (badge) badge.innerText = names[currentType] || currentType;
-            const comp = document.getElementById('scan-computers');
-            if (comp) comp.innerHTML = '<div class="scan-empty">Presiona "Buscar" para escanear...</div>';
-            const others = document.getElementById('scan-others');
-            if (others) others.innerHTML = '';
-            const otherTitle = document.getElementById('scan-other-title');
-            if (otherTitle) otherTitle.style.display = 'none';
-            const dot = document.getElementById('scan-dot');
-            if (dot) dot.classList.remove('scanning');
-            showScreen('screen-connect');
-        };
+    // ============================================================
+    // FISICA ANALOG STICKS
+    // ============================================================
+    function setupAnalogStick(baseId, thumbId) {
+        var base  = document.getElementById(baseId);
+        var thumb = document.getElementById(thumbId);
+        if (!base || !thumb) return;
+        var stickActive = false, touchId = null, maxRadius = 35;
 
-        const startBluetoothScan = () => {
-            hapticUI(30);
-            const comp = document.getElementById('scan-computers');
-            if (comp) comp.innerHTML = '<div class="scan-empty">Escaneando...</div>';
-            const others = document.getElementById('scan-others');
-            if (others) others.innerHTML = '';
-            const otherTitle = document.getElementById('scan-other-title');
-            if (otherTitle) otherTitle.style.display = 'none';
-            const dot = document.getElementById('scan-dot');
-            if (dot) dot.classList.add('scanning');
-            const sub = document.getElementById('scan-subtitle');
-            if (sub) sub.innerText = 'Buscando dispositivos...';
-            if (window.AndroidBridge && window.AndroidBridge.iniciarEscaneo) {
-                window.AndroidBridge.iniciarEscaneo();
-            } else {
-                setTimeout(() => {
-                    if (dot) dot.classList.remove('scanning');
-                    if (comp) comp.innerHTML = '<div class="scan-empty" style="color:#ff6060">Bluetooth nativo no disponible en navegador</div>';
-                }, 2000);
+        base.addEventListener('touchstart', function(e) {
+            if (appState === 'edit') return;
+            e.preventDefault(); e.stopPropagation(); hapticUI(15);
+            var touch = e.changedTouches[0];
+            touchId = touch.identifier; stickActive = true;
+            thumb.classList.add('active-visual');
+            updatePos(touch.clientX, touch.clientY);
+        }, { passive: false });
+
+        function updatePos(cx, cy) {
+            var rect = base.getBoundingClientRect();
+            var dx = cx - (rect.left + rect.width  / 2);
+            var dy = cy - (rect.top  + rect.height / 2);
+            var dist = Math.hypot(dx, dy);
+            if (dist > maxRadius) { dx = (dx / dist) * maxRadius; dy = (dy / dist) * maxRadius; }
+            thumb.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+        }
+
+        document.addEventListener('touchmove', function(e) {
+            if (!stickActive) return;
+            for (var i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === touchId) {
+                    e.preventDefault();
+                    updatePos(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+                }
             }
-        };
+        }, { passive: false });
 
-        window.onDeviceFound = (name, address, isComputer) => {
-            if (isComputer) {
-                const el = document.getElementById('scan-computers');
-                if (el && el.querySelector('.scan-empty')) el.innerHTML = '';
-                if (el) el.insertAdjacentHTML('beforeend', `
-                    <div class="device-item is-computer" onclick="connectDevice('${address}', '${name}')">
-                        <div class="device-icon">&#128421;</div>
-                        <div class="device-info"><div class="device-name">${name}</div><div class="device-mac">${address}</div></div>
-                        <div class="device-badge">PC</div>
-                    </div>`);
-            } else {
-                const otherTitle = document.getElementById('scan-other-title');
-                if (otherTitle) otherTitle.style.display = 'block';
-                const el = document.getElementById('scan-others');
-                if (el) el.insertAdjacentHTML('beforeend', `
-                    <div class="device-item" onclick="connectDevice('${address}', '${name}')">
-                        <div class="device-icon">&#128241;</div>
-                        <div class="device-info"><div class="device-name">${name}</div><div class="device-mac">${address}</div></div>
-                    </div>`);
+        document.addEventListener('touchend', function(e) {
+            for (var i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === touchId) {
+                    stickActive = false; touchId = null;
+                    thumb.classList.remove('active-visual');
+                    thumb.style.transform = 'translate(0,0)';
+                }
             }
-        };
+        });
+    }
 
-        window.onBluetoothScanFinished = () => {
-            const dot = document.getElementById('scan-dot');
-            if (dot) dot.classList.remove('scanning');
-            const sub = document.getElementById('scan-subtitle');
-            if (sub) sub.innerText = 'Escaneo completo. Toca un PC para conectar.';
-            const comp = document.getElementById('scan-computers');
-            if (comp && !comp.querySelector('.device-item')) {
-                comp.innerHTML = '<div class="scan-empty">No se encontraron computadoras. Asegurate de que el PC tenga Bluetooth activo.</div>';
+    setupAnalogStick('el-lstick', 'thumb-l');
+    setupAnalogStick('el-rstick', 'thumb-r');
+
+    // ============================================================
+    // BOTONES INTERACTIVOS (shoulders, face btns, dpad)
+    // ============================================================
+    (function setupButtons() {
+        var btns = document.querySelectorAll('.interactive-btn');
+        for (var i = 0; i < btns.length; i++) {
+            (function(btn) {
+                btn.addEventListener('touchstart', function(e) {
+                    if (appState === 'edit') return;
+                    e.stopPropagation(); hapticUI(12);
+                    btn.classList.add('active');
+                }, { passive: true });
+                btn.addEventListener('touchend',    function() { btn.classList.remove('active'); });
+                btn.addEventListener('touchcancel', function() { btn.classList.remove('active'); });
+            })(btns[i]);
+        }
+    })();
+
+    // ============================================================
+    // CONEXION BLUETOOTH: SCANNER
+    // ============================================================
+    function connectToPC() {
+        hapticUI(30);
+        closeModals();
+
+        // Update badge with current profile name
+        var names = { ps: 'PlayStation', xbox: 'Xbox', generic: 'Generico', racing: 'Carreras' };
+        var badge = document.getElementById('scan-badge');
+        if (badge) badge.textContent = names[currentType] || currentType;
+
+        // Reset scan UI
+        var comp = document.getElementById('scan-computers');
+        if (comp) comp.innerHTML = '<div class="scan-empty">Presiona Buscar para escanear...</div>';
+        var othr = document.getElementById('scan-others'); if (othr) othr.innerHTML = '';
+        var lbl  = document.getElementById('scan-others-label'); if (lbl) lbl.style.display = 'none';
+        var dot  = document.getElementById('scan-dot'); if (dot) dot.classList.remove('scanning');
+
+        showScreen('screen-connect');
+    }
+
+    function startBluetoothScan() {
+        hapticUI(25);
+        var comp = document.getElementById('scan-computers');
+        if (comp) comp.innerHTML = '<div class="scan-empty">Escaneando...</div>';
+        var othr = document.getElementById('scan-others'); if (othr) othr.innerHTML = '';
+        var lbl  = document.getElementById('scan-others-label'); if (lbl) lbl.style.display = 'none';
+        var dot  = document.getElementById('scan-dot'); if (dot) dot.classList.add('scanning');
+        var sub  = document.getElementById('scan-subtitle'); if (sub) sub.textContent = 'Buscando dispositivos...';
+
+        if (window.AndroidBridge && window.AndroidBridge.iniciarEscaneo) {
+            window.AndroidBridge.iniciarEscaneo();
+        } else {
+            // Fallback en navegador
+            setTimeout(function() {
+                var d = document.getElementById('scan-dot'); if (d) d.classList.remove('scanning');
+                var c = document.getElementById('scan-computers');
+                if (c) c.innerHTML = '<div class="scan-empty" style="color:#ff7070">Bluetooth nativo no disponible en navegador</div>';
+            }, 2000);
+        }
+    }
+
+    function connectDevice(address, name) {
+        hapticUI(20);
+        if (window.AndroidBridge && window.AndroidBridge.conectarDispositivo) {
+            window.AndroidBridge.conectarDispositivo(address);
+        } else {
+            // show connecting screen as demo
+            window.onDeviceConnecting(name);
+        }
+    }
+
+    // --- Callbacks desde el nativo (HidManager -> evaluateJavascript) ---
+
+    window.onDeviceFound = function(name, address, isComputer) {
+        if (isComputer) {
+            var el = document.getElementById('scan-computers');
+            if (el && el.querySelector('.scan-empty')) el.innerHTML = '';
+            if (el) {
+                var row = document.createElement('div');
+                row.className = 'device-row is-pc';
+                row.setAttribute('onclick', "connectDevice('" + address + "','" + name + "')");
+                row.innerHTML =
+                    '<div class="device-ico">&#128421;</div>' +
+                    '<div class="device-info-col"><div class="device-name">' + name + '</div><div class="device-mac">' + address + '</div></div>' +
+                    '<div class="device-pc-badge">PC</div>';
+                el.appendChild(row);
             }
-        };
+        } else {
+            var lbl = document.getElementById('scan-others-label'); if (lbl) lbl.style.display = 'block';
+            var el2 = document.getElementById('scan-others');
+            if (el2) {
+                var row2 = document.createElement('div');
+                row2.className = 'device-row';
+                row2.setAttribute('onclick', "connectDevice('" + address + "','" + name + "')");
+                row2.innerHTML =
+                    '<div class="device-ico">&#128241;</div>' +
+                    '<div class="device-info-col"><div class="device-name">' + name + '</div><div class="device-mac">' + address + '</div></div>';
+                el2.appendChild(row2);
+            }
+        }
+    };
 
-        window.onDeviceConnecting = (name) => {
-            const t = document.getElementById('connecting-title');
-            const s = document.getElementById('connecting-sub');
-            if (t) t.innerText = `Conectando a ${name}...`;
-            if (s) s.innerText = 'Acepta el PIN de emparejamiento en tu PC';
-            showScreen('screen-connecting');
-        };
+    window.onBluetoothScanFinished = function() {
+        var dot = document.getElementById('scan-dot'); if (dot) dot.classList.remove('scanning');
+        var sub = document.getElementById('scan-subtitle');
+        if (sub) sub.textContent = 'Escaneo completo. Toca un PC para conectar.';
+        var comp = document.getElementById('scan-computers');
+        if (comp && !comp.querySelector('.device-row')) {
+            comp.innerHTML = '<div class="scan-empty">No se encontraron computadoras.<br>Asegurate de que el PC tenga Bluetooth activo.</div>';
+        }
+    };
 
-        window.onDeviceConnected = (name) => {
-            hapticUI([30, 50, 30]);
-            setTimeout(() => { setMode('play'); showScreen('screen-gamepad'); startNativeGamepadLoop(); }, 1200);
-        };
+    window.onDeviceConnecting = function(name) {
+        var t = document.getElementById('conn-title');
+        var s = document.getElementById('conn-sub');
+        if (t) t.textContent = 'Conectando a ' + name + '...';
+        if (s) s.textContent = 'Acepta el PIN de emparejamiento en tu PC';
+        showScreen('screen-connecting');
+    };
 
-        window.onDeviceDisconnected = () => { if (appState === 'play') { setMode('test'); showScreen('screen-gamepad'); } };
-        window.onHidRegistered = () => {};
-        window.onBluetoothError = (code) => {
-            const dot = document.getElementById('scan-dot');
-            if (dot) dot.classList.remove('scanning');
-            const sub = document.getElementById('scan-subtitle');
-            if (sub) sub.innerText = code === 'BT_DISABLED' ? 'Bluetooth apagado. Por favor activalolo.' : 'Error de conexion';
-        };
+    window.onDeviceConnected = function(name) {
+        hapticUI([30, 50, 30]);
+        var t = document.getElementById('conn-title');
+        var s = document.getElementById('conn-sub');
+        if (t) t.textContent = 'Conectado a ' + name + '!';
+        if (s) s.textContent = 'Iniciando modo gamepad...';
+        setTimeout(function() {
+            setMode('play');
+            showScreen('screen-gamepad');
+            startNativeGamepadLoop();
+        }, 1200);
+    };
 
-        const connectDevice = (address, name) => {
-            hapticUI(20);
-            if (window.AndroidBridge && window.AndroidBridge.conectarDispositivo) {
-                window.AndroidBridge.conectarDispositivo(address);
-            } else { window.onDeviceConnecting(name); }
-        };
+    window.onDeviceDisconnected = function() {
+        if (appState === 'play') { setMode('test'); showScreen('screen-gamepad'); }
+    };
 
-        const startNativeGamepadLoop = () => {
-            if (!window.AndroidBridge) return;
-            setInterval(() => {
-                if (appState !== 'play') return;
-                let buttons = 0, lx = 128, ly = 128, rx = 128, ry = 128;
-                if (document.querySelector('.act-bottom.active')) buttons |= (1 << 0);
-                if (document.querySelector('.act-right.active'))  buttons |= (1 << 1);
-                if (document.querySelector('.act-left.active'))   buttons |= (1 << 2);
-                if (document.querySelector('.act-top.active'))    buttons |= (1 << 3);
-                window.AndroidBridge.enviarReporte(buttons, lx, ly, rx, ry);
-            }, 20);
-        };
+    window.onHidRegistered = function() { /* HID profile listo */ };
 
-        const forcePlayMode = () => { hapticUI(30); setMode('play'); showScreen('screen-gamepad'); };
+    window.onBluetoothError = function(code) {
+        var dot = document.getElementById('scan-dot'); if (dot) dot.classList.remove('scanning');
+        var sub = document.getElementById('scan-subtitle');
+        if (sub) sub.textContent = (code === 'BT_DISABLED') ? 'Activa el Bluetooth y reintenta' : 'Error de conexion: ' + code;
+    };
+
+    // ============================================================
+    // GAMEPAD LOOP (envio de reportes HID al nativo)
+    // ============================================================
+    function startNativeGamepadLoop() {
+        if (!window.AndroidBridge || !window.AndroidBridge.enviarReporte) return;
+        setInterval(function() {
+            if (appState !== 'play') return;
+            var buttons = 0;
+            var lx = 128, ly = 128, rx = 128, ry = 128;
+            if (document.querySelector('.act-bottom.active')) buttons |= (1 << 0); // A
+            if (document.querySelector('.act-right.active'))  buttons |= (1 << 1); // B
+            if (document.querySelector('.act-left.active'))   buttons |= (1 << 2); // X
+            if (document.querySelector('.act-top.active'))    buttons |= (1 << 3); // Y
+            if (document.querySelector('.d-up.active'))       buttons |= (1 << 4);
+            if (document.querySelector('.d-down.active'))     buttons |= (1 << 5);
+            if (document.querySelector('.d-left.active'))     buttons |= (1 << 6);
+            if (document.querySelector('.d-right.active'))    buttons |= (1 << 7);
+            window.AndroidBridge.enviarReporte(buttons, lx, ly, rx, ry);
+        }, 16); // ~60Hz
+    }
+
     </script>
 </body>
-
 </html>
