@@ -15,6 +15,15 @@ class AndroidBridge(private val context: Context, private val hidManager: HidMan
     }
 
     @JavascriptInterface
+    fun solicitarVisibilidadBluetooth() {
+        val discoverableIntent = android.content.Intent(android.bluetooth.BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
+            putExtra(android.bluetooth.BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
+            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(discoverableIntent)
+    }
+
+    @JavascriptInterface
     fun enviarReporte(buttons: Int, leftX: Int, leftY: Int, rightX: Int, rightY: Int) {
         if (!hidManager.isConnected) {
             return

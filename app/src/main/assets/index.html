@@ -956,7 +956,8 @@
 
             <div id="edit-controls" style="display: none; gap: 10px;">
                 <button class="btn btn-outline" onclick="resetLayoutToDefault()">↺ Restaurar Original</button>
-                <button class="btn btn-primary" onclick="saveLayoutAndExit()">✓ Guardar Layout</button>
+                <button class="btn btn-outline" onclick="openLoadModal()">📂 Cargar Layout</button>
+                <button class="btn btn-primary" onclick="openSaveModal()">✓ Guardar Layout</button>
             </div>
         </div>
 
@@ -967,6 +968,23 @@
                 <button class="opt-btn" onclick="setHapticLvl(0.5)">Suave</button>
                 <button class="opt-btn active" onclick="setHapticLvl(1)">Media</button>
                 <button class="opt-btn" onclick="setHapticLvl(2)">Fuerte</button>
+            </div>
+        </div>
+
+        <div class="settings-modal" id="save-modal">
+            <div class="settings-title">Guardar Layout</div>
+            <input type="text" id="layout-name-input" placeholder="Nombre (ej. Mi Config)" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:none; background:#333; color:white; font-size:1rem; outline:none; text-align:center;">
+            <div style="display:flex; justify-content:center; gap:10px;">
+                <button class="btn btn-outline" onclick="closeModals()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveLayoutAndExit()">Confirmar</button>
+            </div>
+        </div>
+
+        <div class="settings-modal" id="load-modal" style="max-height: 60vh; overflow-y: auto;">
+            <div class="settings-title">Mis Layouts Guardados</div>
+            <div id="load-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;"></div>
+            <div style="display:flex; justify-content:center; gap:10px;">
+                <button class="btn btn-outline" onclick="closeModals()">Cerrar</button>
             </div>
         </div>
 
@@ -1145,7 +1163,17 @@
         let hapticLvl = parseFloat(localStorage.getItem('gb_haptic_lvl')) ?? 1;
         const setHapticLvl = (lvl) => { hapticLvl = lvl; localStorage.setItem('gb_haptic_lvl', lvl); document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active')); event.target.classList.add('active'); if (lvl > 0) navigator.vibrate(20 * lvl); };
         const hapticUI = (ms = 10) => { if (navigator.vibrate && hapticLvl > 0) navigator.vibrate(ms * hapticLvl); };
-        const toggleSettings = () => { document.getElementById('settings-modal').classList.toggle('active'); };
+        
+        const closeModals = () => {
+            document.getElementById('settings-modal').classList.remove('active');
+            document.getElementById('save-modal').classList.remove('active');
+            document.getElementById('load-modal').classList.remove('active');
+        };
+
+        const toggleSettings = () => { 
+            closeModals(); 
+            document.getElementById('settings-modal').classList.toggle('active'); 
+        };
         const showScreen = (id) => { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
 
         // --- 2. SISTEMA DE PARTÍCULAS ---
@@ -1188,13 +1216,55 @@
         };
 
         const loadLayout = () => {
-            const saved = localStorage.getItem('gb_layout_' + currentType);
-            if (saved) applyLayoutData(JSON.parse(saved)); else applyLayoutData(defaultLayouts[currentType]);
+            const savedLists = JSON.parse(localStorage.getItem('gb_layouts_list') || '{}');
+            const defaultSaved = savedLists[`default_${currentType}`];
+            if (defaultSaved) applyLayoutData(defaultSaved); 
+            else applyLayoutData(defaultLayouts[currentType]);
+        };
+
+        const loadSpecificLayout = (name) => {
+            hapticUI(20);
+            const savedLists = JSON.parse(localStorage.getItem('gb_layouts_list') || '{}');
+            if (savedLists[name]) applyLayoutData(savedLists[name].data);
+            closeModals();
+        };
+
+        const openLoadModal = () => {
+            hapticUI(15);
+            closeModals();
+            const listContainer = document.getElementById('load-list');
+            listContainer.innerHTML = '';
+            const savedLists = JSON.parse(localStorage.getItem('gb_layouts_list') || '{}');
+            
+            const keys = Object.keys(savedLists).filter(k => savedLists[k].type === currentType);
+            if (keys.length === 0) {
+                listContainer.innerHTML = '<span style="color:#aaa; text-align:center;">No hay layouts guardados para este mando</span>';
+            } else {
+                keys.forEach(k => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn btn-outline';
+                    btn.style.width = '100%';
+                    btn.innerHTML = k;
+                    btn.onclick = () => loadSpecificLayout(k);
+                    listContainer.appendChild(btn);
+                });
+            }
+            document.getElementById('load-modal').classList.add('active');
+        };
+
+        const openSaveModal = () => {
+            hapticUI(15);
+            closeModals();
+            document.getElementById('layout-name-input').value = `Layout ${Math.floor(Math.random()*1000)}`;
+            document.getElementById('save-modal').classList.add('active');
         };
 
         const resetLayoutToDefault = () => { hapticUI(20); applyLayoutData(defaultLayouts[currentType]); deselectElement(); };
 
         const saveLayoutAndExit = () => {
+            const nameInput = document.getElementById('layout-name-input').value.trim();
+            if (!nameInput) return;
+            
             const currentLayoutData = {};
             document.querySelectorAll('.gp-element').forEach(el => {
                 const rect = el.getBoundingClientRect();
@@ -1202,7 +1272,13 @@
                 const yVh = ((rect.top + rect.height / 2) / window.innerHeight) * 100;
                 currentLayoutData[el.dataset.id] = { cx: xVw, cy: yVh, ox: 0, oy: 0, s: parseFloat(el.dataset.scale) || 1 };
             });
-            localStorage.setItem('gb_layout_' + currentType, JSON.stringify(currentLayoutData));
+            
+            const savedLists = JSON.parse(localStorage.getItem('gb_layouts_list') || '{}');
+            savedLists[nameInput] = { type: currentType, data: currentLayoutData };
+            savedLists[`default_${currentType}`] = currentLayoutData; // Default load slot
+            localStorage.setItem('gb_layouts_list', JSON.stringify(savedLists));
+            
+            closeModals();
             hapticUI([20, 40]); setMode('test');
         };
 
@@ -1323,10 +1399,16 @@
                 log.innerText = "Estableciendo conexión segura...";
                 setTimeout(() => {
                     if (window.AndroidBridge && typeof window.AndroidBridge.conectarBluetooth === 'function') {
+                        // Solicita visibilidad (LANZARÁ EL DIÁLOGO DEL SISTEMA)
+                        if (typeof window.AndroidBridge.solicitarVisibilidadBluetooth === 'function') {
+                            window.AndroidBridge.solicitarVisibilidadBluetooth();
+                        }
+                        
                         window.AndroidBridge.conectarBluetooth();
                         hapticUI([30, 50, 30]);
                         radar.classList.add('success');
-                        btText.innerText = "✓"; title.innerText = "¡CONECTADO!"; log.innerText = "Enlazado exitosamente.";
+                        btText.innerText = "✓"; title.innerText = "Modo Visible Activo"; log.innerText = "Empareja el PC. Se enviarán datos...";
+
                         setTimeout(() => { 
                             setMode('play'); 
                             showScreen('screen-gamepad'); 
