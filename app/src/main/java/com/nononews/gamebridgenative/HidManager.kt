@@ -89,6 +89,17 @@ class HidManager(private val context: Context, private val webView: WebView) {
             "racing"  -> "GameBridge Wheel"
             else      -> "GameBridge Controller"
         }
+        // Rename the Bluetooth adapter so the PC discovers it with the right name
+        try {
+            val adapter = BluetoothAdapter.getDefaultAdapter()
+            @SuppressLint("MissingPermission")
+            if (adapter != null) {
+                adapter.name = deviceName
+                Log.i(TAG, "BT adapter renamed to: $deviceName")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not rename adapter: ${e.message}")
+        }
     }
 
     fun hasPermissions(): Boolean {

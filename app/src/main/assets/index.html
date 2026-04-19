@@ -5,1497 +5,1255 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GameBridge Pro</title>
     <style>
-        /* =====================================================
-           0. GOOGLE FONT
-           ===================================================== */
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap');
 
-        /* =====================================================
-           1. VARIABLES DE TEMA
-           ===================================================== */
+        /* ========== VARIABLES ========== */
         :root {
             --bg-dark: #07090e;
-            --bg-card: #0f1318;
-            --bg-card-hover: #171c24;
-            --text-main: #e8eaf0;
-            --text-muted: #6b7280;
-            --border: rgba(255,255,255,0.07);
+            --bg-panel: rgba(17,21,32,0.65);
+            --text-main: #ffffff;
+            --text-muted: #8892b0;
         }
 
-        body.theme-init   { --theme-color:#8b5cf6; --theme-glow:#8b5cf6; --theme-accent:#a78bfa; --rgb-glow:139,92,246; }
-        body.theme-ps     { --theme-color:#006FFF; --theme-glow:#0094ff; --theme-accent:#58b5ff; --rgb-glow:0,148,255; }
-        body.theme-xbox   { --theme-color:#107c10; --theme-glow:#16a116; --theme-accent:#4ccc4c; --rgb-glow:22,161,22; }
-        body.theme-generic{ --theme-color:#f97316; --theme-glow:#fb923c; --theme-accent:#fdba74; --rgb-glow:249,115,22; }
-        body.theme-racing { --theme-color:#ef4444; --theme-glow:#f87171; --theme-accent:#fca5a5; --rgb-glow:239,68,68; }
+        body.theme-init    { --theme-color:rgba(170,85,255,0.15);  --theme-glow:#aa55ff; --theme-accent:#d4aaff; --rgb-glow:170,85,255; }
+        body.theme-ps      { --theme-color:rgba(0,110,255,0.15);   --theme-glow:#0088ff; --theme-accent:#00d4ff; --rgb-glow:0,136,255; }
+        body.theme-xbox    { --theme-color:rgba(16,124,16,0.15);   --theme-glow:#107c10; --theme-accent:#00ff66; --rgb-glow:16,124,16; }
+        body.theme-generic { --theme-color:rgba(255,110,0,0.15);   --theme-glow:#ff7700; --theme-accent:#ffae00; --rgb-glow:255,119,0; }
+        body.theme-racing  { --theme-color:rgba(255,20,50,0.15);   --theme-glow:#ff1432; --theme-accent:#ff5e00; --rgb-glow:255,20,50; }
 
-        /* =====================================================
-           2. RESET Y BASE
-           ===================================================== */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        *, *::before, *::after {
+            box-sizing: border-box; margin: 0; padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none; -webkit-user-select: none;
+        }
 
         body {
-            background: var(--bg-dark);
-            color: var(--text-main);
-            font-family: 'Outfit', sans-serif;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            position: relative;
+            background: var(--bg-dark); color: var(--text-main);
+            font-family: 'Outfit', 'Segoe UI', system-ui, sans-serif;
+            overflow: hidden; width: 100vw; height: 100vh;
+            touch-action: none; transition: background-color 0.8s;
         }
 
         #bg-canvas {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 0;
+            position: absolute; top: 0; left: 0;
+            width: 100vw; height: 100vh; z-index: 0; pointer-events: none;
         }
 
-        /* =====================================================
-           3. SISTEMA DE PANTALLAS
-           CRITICAL: overflow:hidden impide que elementos
-           position:absolute de pantallas inactivas se filtren
-           ===================================================== */
+        /* ========== SISTEMA DE PANTALLAS ========== */
+        /* overflow:hidden es CRITICO: impide que gp-elements position:absolute
+           de screen-gamepad se filtren visualmente cuando está display:none    */
         .screen {
-            position: absolute;
-            top: 0; left: 0;
+            position: absolute; top: 0; left: 0;
             width: 100%; height: 100%;
-            display: none;
-            flex-direction: column;
-            overflow: hidden;
-            z-index: 10;
+            display: none; flex-direction: column;
+            overflow: hidden; z-index: 10;
         }
-        .screen.active {
-            display: flex;
-            animation: fadeIn 0.35s ease;
-        }
+        .screen.active { display: flex; animation: fadeIn 0.38s ease; }
         @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.98); }
-            to   { opacity: 1; transform: scale(1); }
+            from { opacity:0; transform:scale(0.98); }
+            to   { opacity:1; transform:scale(1); }
         }
 
-        /* =====================================================
-           4. PANTALLA 1 - SELECCION
-           ===================================================== */
+        /* ========== PANTALLA 1: SELECCION ========== */
         #screen-selection {
-            justify-content: center;
-            align-items: center;
-            gap: 0;
-            padding: 30px 24px;
+            justify-content: center; align-items: center;
+            background: radial-gradient(circle at center, rgba(17,22,37,0.8) 0%, var(--bg-dark) 100%);
+            overflow-y: auto;
         }
 
         .header-title {
-            font-size: 2.4rem;
-            font-weight: 800;
-            letter-spacing: -1px;
-            text-align: center;
-            z-index: 1;
+            font-size: 2.5rem; font-weight: 900; text-transform: uppercase;
+            letter-spacing: 2px; margin-bottom: 6px;
+            background: linear-gradient(120deg, #888 0%, #fff 40%, var(--theme-glow) 50%, #fff 60%, #888 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: shine 3.5s linear infinite; transition: background 0.8s;
         }
-        .header-title span { color: var(--theme-accent); }
+        @keyframes shine { 0%{ background-position:200% center; } 100%{ background-position:-200% center; } }
+
         .header-subtitle {
-            font-size: 0.78rem;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            margin-top: 4px;
-            margin-bottom: 36px;
-            text-align: center;
-            z-index: 1;
+            color: var(--text-muted); font-size: 0.88rem;
+            text-transform: uppercase; letter-spacing: 2px;
+            margin-bottom: 32px; text-align: center;
         }
 
         .card-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-            width: 100%;
-            max-width: 440px;
-            z-index: 1;
+            display: flex; gap: 15px; flex-wrap: wrap;
+            justify-content: center; max-width: 900px;
+            padding: 0 12px 50px; z-index: 2;
         }
 
         .controller-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 28px 16px 22px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: manipulation;
+            background: var(--bg-panel); backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 18px;
+            width: 160px; padding: 26px 12px 20px; text-align: center;
+            cursor: pointer; touch-action: manipulation;
+            transition: all 0.25s cubic-bezier(0.25,0.8,0.25,1);
         }
         .controller-card:active {
-            transform: scale(0.95);
-            background: var(--bg-card-hover);
-            border-color: var(--theme-glow);
-            box-shadow: 0 0 20px rgba(var(--rgb-glow), 0.25);
+            transform: scale(0.93);
+            box-shadow: 0 0 26px rgba(var(--card-rgb, 255,255,255),0.3);
         }
+        .controller-card.ps     { --card-rgb: 0,136,255; }
+        .controller-card.ps:active     { border-color: #0088ff; }
+        .controller-card.xbox   { --card-rgb: 16,124,16; }
+        .controller-card.xbox:active   { border-color: #107c10; }
+        .controller-card.generic{ --card-rgb: 255,119,0; }
+        .controller-card.generic:active{ border-color: #ff7700; }
+        .controller-card.racing { --card-rgb: 255,20,50; }
+        .controller-card.racing:active { border-color: #ff1432; }
 
-        .card-icon {
-            width: 58px;
-            height: 58px;
-            border-radius: 50%;
-            background: rgba(var(--rgb-glow), 0.12);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid rgba(var(--rgb-glow), 0.25);
-        }
         .card-icon svg {
-            width: 30px;
-            height: 30px;
-            stroke: var(--theme-glow);
-            fill: none;
-            stroke-width: 1.5;
-            stroke-linecap: round;
-            stroke-linejoin: round;
+            width: 55px; height: 55px; margin-bottom: 15px;
+            fill: none; stroke: currentColor;
+            stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
         }
-        .card-icon svg path, .card-icon svg circle, .card-icon svg rect {
-            fill: none;
-            stroke: var(--theme-glow);
-        }
+        .controller-card.ps .card-icon      { color:#00d4ff; filter:drop-shadow(0 0 6px rgba(0,212,255,0.4)); }
+        .controller-card.xbox .card-icon    { color:#00ff66; filter:drop-shadow(0 0 6px rgba(0,255,102,0.4)); }
+        .controller-card.generic .card-icon { color:#ffae00; filter:drop-shadow(0 0 6px rgba(255,174,0,0.4)); }
+        .controller-card.racing .card-icon  { color:#ff5e00; filter:drop-shadow(0 0 6px rgba(255,94,0,0.4)); }
 
-        .card-title {
-            font-size: 1rem;
-            font-weight: 700;
-            text-align: center;
-        }
-        .card-desc {
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            text-align: center;
-        }
+        .card-title { font-size:1.05rem; font-weight:700; margin-bottom:5px; }
+        .card-desc  { font-size:0.73rem; color:var(--text-muted); line-height:1.5; }
 
         .watermark {
-            margin-top: 30px;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            z-index: 1;
+            position: absolute; bottom: 14px; width: 100%;
+            text-align: center; font-size:0.73rem; color:rgba(255,255,255,0.28);
+            letter-spacing:3px; text-transform:uppercase; pointer-events:none; z-index:5;
         }
-        .watermark span { color: var(--theme-accent); font-weight: 700; }
+        .watermark span { font-weight:800; color:var(--theme-glow); text-shadow:0 0 10px var(--theme-glow); }
 
-        /* =====================================================
-           5. PANTALLA 2 - GAMEPAD (LANDSCAPE)
-           ===================================================== */
+        /* ========== PANTALLA 2: GAMEPAD ========== */
         #screen-gamepad {
-            background: var(--bg-dark);
+            background: radial-gradient(circle at 50% 50%, var(--theme-color) 0%, transparent 80%);
+            transition: background 0.5s;
         }
+
+        .editor-grid {
+            position: absolute; width:100%; height:100%;
+            background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+            background-size: 40px 40px; opacity:0; pointer-events:none;
+            z-index:0; transition: opacity 0.3s;
+        }
+        .state-edit .editor-grid { opacity:1; }
 
         .top-toolbar {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%;
-            padding: 10px 18px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: linear-gradient(180deg, rgba(7,9,14,0.95), transparent);
-            z-index: 50;
-            gap: 10px;
-            transition: transform 0.3s ease;
+            position: absolute; top:0; left:0; width:100%;
+            padding: 10px 20px; display:flex; justify-content:space-between;
+            align-items:center; gap:10px;
+            background: linear-gradient(180deg, rgba(7,9,14,0.96), transparent);
+            z-index: 100; transition: transform 0.3s;
         }
-
-        .state-play .top-toolbar { transform: translateY(-100%); }
-        .state-play .status-badge { display: none; }
+        .state-play .top-toolbar { transform: translateY(-110%); }
 
         .btn-back-circle {
-            background: rgba(255,255,255,0.05);
-            border: 1.5px solid rgba(255,255,255,0.15);
-            color: white;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            flex-shrink: 0;
-            transition: background 0.15s, border-color 0.15s;
+            background: rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.18);
+            color:white; width:36px; height:36px; border-radius:50%;
+            font-size:1.15rem; display:flex; align-items:center; justify-content:center;
+            cursor:pointer; flex-shrink:0; transition:background 0.15s;
         }
-        .btn-back-circle:active { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); }
+        .btn-back-circle:active { background:rgba(255,255,255,0.2); }
 
         .status-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-main);
-            font-weight: 600;
-            font-size: 0.85rem;
-            background: rgba(255,255,255,0.05);
-            padding: 5px 14px;
-            border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-            flex-shrink: 0;
+            display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.88rem;
+            background:rgba(255,255,255,0.06); padding:5px 15px;
+            border-radius:20px; border:1px solid rgba(255,255,255,0.1);
+            backdrop-filter:blur(6px);
         }
         .status-badge .dot {
-            width: 7px; height: 7px;
-            border-radius: 50%;
-            background: var(--theme-glow);
-            box-shadow: 0 0 8px var(--theme-glow);
+            width:8px; height:8px; border-radius:50%;
+            background:var(--theme-glow); box-shadow:0 0 10px var(--theme-glow);
+            transition: background 0.5s, box-shadow 0.5s;
         }
 
         .btn {
-            border: none;
-            border-radius: 10px;
-            padding: 8px 16px;
-            font-family: 'Outfit', sans-serif;
-            font-weight: 600;
-            font-size: 0.82rem;
-            cursor: pointer;
-            transition: transform 0.1s, opacity 0.1s;
-            touch-action: manipulation;
+            border:1px solid rgba(255,255,255,0.2); color:white;
+            padding:8px 18px; border-radius:8px; font-weight:600; font-size:0.84rem;
+            cursor:pointer; font-family:inherit; transition:transform 0.1s, opacity 0.1s;
+            background:rgba(255,255,255,0.1); touch-action:manipulation;
         }
-        .btn:active { transform: scale(0.94); opacity: 0.85; }
+        .btn:active { transform:scale(0.94); opacity:0.85; }
         .btn-primary {
-            background: linear-gradient(135deg, var(--theme-color), var(--theme-glow));
-            color: white;
+            background:var(--theme-glow); border-color:var(--theme-glow);
+            box-shadow:0 0 15px var(--theme-color);
+            transition:background 0.5s, border-color 0.5s, box-shadow 0.5s;
         }
-        .btn-outline {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: var(--text-main);
-        }
-        .btn-danger {
-            background: rgba(255,50,50,0.12);
-            border: 1px solid rgba(255,80,80,0.35);
-            color: #ff7070;
-        }
+        .btn-outline { background:transparent; }
+        .btn-danger  { background:#c0392b; border-color:#c0392b; }
 
-        #test-controls { display: flex; gap: 8px; align-items: center; }
-        #edit-controls { display: none; gap: 7px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+        #test-controls { display:flex; gap:8px; align-items:center; }
+        #edit-controls { display:none; gap:8px; align-items:center; flex-wrap:wrap; }
 
         /* Modales */
-        .settings-modal {
-            position: absolute;
-            top: 65px; right: 18px;
-            background: rgba(15,19,24,0.97);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 16px;
-            padding: 18px;
-            width: 240px;
-            z-index: 60;
-            backdrop-filter: blur(20px);
-            display: none;
+        .modal {
+            position:absolute; right:16px; top:62px; z-index:200;
+            background:rgba(15,18,28,0.97); border:1px solid var(--theme-glow);
+            border-radius:14px; padding:16px; min-width:230px;
+            backdrop-filter:blur(14px); box-shadow:0 10px 34px rgba(0,0,0,0.8);
+            display:none; flex-direction:column; gap:10px;
+            transition:border-color 0.5s;
         }
-        .settings-modal.active { display: block; }
-        .settings-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 14px; }
-        .haptic-opts { display: flex; gap: 8px; flex-wrap: wrap; }
+        .modal.active { display:flex; }
+        .modal-title {
+            font-size:0.82rem; font-weight:700; text-transform:uppercase;
+            color:var(--theme-glow); letter-spacing:1px;
+        }
+        .haptic-opts { display:flex; gap:6px; flex-wrap:wrap; }
         .opt-btn {
-            background: rgba(255,255,255,0.07);
-            border: 1px solid rgba(255,255,255,0.12);
-            color: var(--text-main);
-            border-radius: 8px;
-            padding: 6px 12px;
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.8rem;
-            cursor: pointer;
+            background:rgba(255,255,255,0.1); border:1px solid transparent;
+            color:#fff; padding:6px 12px; border-radius:6px; font-size:0.8rem;
+            cursor:pointer; font-family:inherit;
         }
-        .opt-btn.active {
-            background: rgba(var(--rgb-glow),0.2);
-            border-color: var(--theme-glow);
-            color: var(--theme-accent);
+        .opt-btn.sel { background:var(--theme-glow); color:#000; font-weight:700; border-color:var(--theme-glow); }
+
+        .modal input[type="text"] {
+            width:100%; padding:10px; border-radius:8px; border:none;
+            background:rgba(255,255,255,0.08); color:white; font-size:0.95rem;
+            font-family:inherit; outline:none; text-align:center;
         }
+        .modal-row { display:flex; gap:10px; }
 
         .scale-panel {
-            position: absolute;
-            bottom: 18px; left: 50%;
-            transform: translateX(-50%);
-            background: rgba(15,19,24,0.95);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            padding: 12px 20px;
-            display: none;
-            align-items: center;
-            gap: 14px;
-            z-index: 60;
-            backdrop-filter: blur(10px);
+            position:absolute; bottom:16px; left:50%; transform:translateX(-50%);
+            display:none; align-items:center; gap:12px; z-index:200;
+            background:rgba(15,18,28,0.95); border:1px solid rgba(255,255,255,0.1);
+            border-radius:12px; padding:10px 18px; backdrop-filter:blur(10px);
         }
-        .scale-panel.active { display: flex; }
-        #size-slider { width: 130px; accent-color: var(--theme-glow); }
+        .scale-panel.active { display:flex; }
+        #size-slider { width:120px; accent-color:var(--theme-glow); }
 
-        /* Gamepad area */
-        .gamepad-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-        .editor-grid { display: none; }
+        /* ========== AREA DE GAMEPAD ========== */
+        .gamepad-container { position:relative; width:100%; height:100%; }
 
-        .gp-element {
-            position: absolute;
-            transform-origin: center center;
-            z-index: 20;
-        }
-        .state-edit .gp-element { cursor: move; }
+        .gp-element { position:absolute; transform-origin:center; z-index:20; }
+        .state-edit .gp-element { cursor:move; }
         .state-edit .gp-element.selected {
-            outline: 2px dashed var(--theme-accent);
-            background: rgba(255,255,255,0.04);
-            box-shadow: 0 0 14px var(--theme-color);
-            border-radius: 10px;
+            outline:2px dashed var(--theme-accent);
+            background:rgba(255,255,255,0.03);
+            box-shadow:0 0 16px var(--theme-color);
+            border-radius:12px;
         }
 
-        .racing-el { display: none; }
-        .theme-racing .racing-el { display: block; }
-        .theme-racing .standard-el { display: block; }
+        .standard-el {}
+        .racing-el   { display:none; }
 
         /* Analog stick */
         .analog-stick {
-            width: 100px; height: 100px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 40% 38%, rgba(255,255,255,0.08), rgba(0,0,0,0.4));
-            border: 2px solid rgba(255,255,255,0.12);
-            display: flex; align-items: center; justify-content: center;
-            position: relative;
+            width:100px; height:100px; border-radius:50%;
+            background:radial-gradient(circle at 40% 38%, rgba(255,255,255,0.09), rgba(0,0,0,0.45));
+            border:2px solid rgba(255,255,255,0.12);
+            display:flex; align-items:center; justify-content:center;
         }
         .analog-thumb {
-            width: 44px; height: 44px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 38% 36%, rgba(255,255,255,0.18), rgba(0,0,0,0.6));
-            border: 2px solid rgba(var(--rgb-glow),0.5);
-            box-shadow: 0 0 10px rgba(var(--rgb-glow),0.2);
-            transition: box-shadow 0.1s;
-            position: relative;
+            width:44px; height:44px; border-radius:50%;
+            background:radial-gradient(circle at 38% 36%, rgba(255,255,255,0.18), rgba(0,0,0,0.6));
+            border:2px solid rgba(var(--rgb-glow),0.5);
+            box-shadow:0 0 10px rgba(var(--rgb-glow),0.2);
+            transition:box-shadow 0.08s;
         }
-        .analog-thumb.active-visual { box-shadow: 0 0 20px rgba(var(--rgb-glow),0.6); }
+        .analog-thumb.pressed { box-shadow:0 0 22px rgba(var(--rgb-glow),0.65); }
 
-        /* Buttons */
+        /* Face buttons */
         .act-btn {
-            width: 52px; height: 52px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.07);
-            border: 2px solid rgba(255,255,255,0.18);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1rem; font-weight: 700; color: rgba(255,255,255,0.75);
-            transition: background 0.1s, box-shadow 0.1s, transform 0.08s;
+            width:52px; height:52px; border-radius:50%;
+            background:rgba(255,255,255,0.07); border:2px solid rgba(255,255,255,0.2);
+            display:flex; align-items:center; justify-content:center;
+            font-size:0.95rem; font-weight:700; color:rgba(255,255,255,0.75);
+            font-family:inherit; transition:all 0.09s;
         }
-        .act-btn.active-visual, .interactive-btn.active {
-            background: rgba(var(--rgb-glow),0.3);
-            border-color: var(--theme-glow);
-            box-shadow: 0 0 16px rgba(var(--rgb-glow),0.5);
-            transform: scale(0.92);
+        .act-top    { border-color:rgba(100,200,255,0.55); color:rgba(100,200,255,0.9); }
+        .act-bottom { border-color:rgba(255,60,100,0.55);  color:rgba(255,60,100,0.9); }
+        .act-left   { border-color:rgba(255,120,30,0.55);  color:rgba(255,120,30,0.9); }
+        .act-right  { border-color:rgba(60,205,110,0.55);  color:rgba(60,205,110,0.9); }
+        .interactive-btn.active {
+            background:rgba(var(--rgb-glow),0.28);
+            border-color:var(--theme-glow) !important;
+            box-shadow:0 0 18px rgba(var(--rgb-glow),0.5);
+            transform:scale(0.9);
         }
-
-        .act-top    { border-color: rgba(0,180,255,0.5); color: rgba(0,180,255,0.9); }
-        .act-bottom { border-color: rgba(255,50,80,0.5); color: rgba(255,50,80,0.9); }
-        .act-left   { border-color: rgba(255,100,30,0.5); color: rgba(255,100,30,0.9); }
-        .act-right  { border-color: rgba(50,200,100,0.5); color: rgba(50,200,100,0.9); }
 
         /* D-Pad */
-        .dpad { position: relative; width: 110px; height: 110px; }
+        .dpad { position:relative; width:112px; height:112px; }
         .d-center {
-            position: absolute; left: 50%; top: 50%;
-            transform: translate(-50%,-50%);
-            width: 34px; height: 34px;
-            border-radius: 50%; background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1); z-index: 2;
+            position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+            width:35px; height:35px; border-radius:50%;
+            background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); z-index:2;
         }
         .d-btn {
-            position: absolute; width: 36px; height: 36px;
-            background: rgba(255,255,255,0.07);
-            border: 1px solid rgba(255,255,255,0.12);
-            display: flex; align-items: center; justify-content: center;
-            color: rgba(255,255,255,0.6); font-size: 0.8rem;
-            transition: background 0.1s, box-shadow 0.1s;
+            position:absolute; width:37px; height:37px;
+            background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.14);
+            display:flex; align-items:center; justify-content:center;
+            color:rgba(255,255,255,0.65); font-size:0.78rem; transition:all 0.09s;
         }
-        .d-up    { top: 0; left: 50%; transform: translateX(-50%); border-radius: 6px 6px 0 0; }
-        .d-down  { bottom: 0; left: 50%; transform: translateX(-50%); border-radius: 0 0 6px 6px; }
-        .d-left  { top: 50%; left: 0; transform: translateY(-50%); border-radius: 6px 0 0 6px; }
-        .d-right { top: 50%; right: 0; transform: translateY(-50%); border-radius: 0 6px 6px 0; }
-        .d-btn.active {
-            background: rgba(var(--rgb-glow),0.3);
-            box-shadow: 0 0 12px rgba(var(--rgb-glow),0.4);
+        .d-up   { top:0;    left:50%; transform:translateX(-50%); border-radius:6px 6px 0 0; }
+        .d-down { bottom:0; left:50%; transform:translateX(-50%); border-radius:0 0 6px 6px; }
+        .d-left { top:50%;  left:0;   transform:translateY(-50%); border-radius:6px 0 0 6px; }
+        .d-right{ top:50%;  right:0;  transform:translateY(-50%); border-radius:0 6px 6px 0; }
+
+        /* Shoulder & trigger */
+        .shoulder-group {
+            background:rgba(255,255,255,0.08); border:1.5px solid rgba(255,255,255,0.18);
+            border-radius:10px; padding:8px 20px;
+            font-size:0.86rem; font-weight:700; color:rgba(255,255,255,0.78);
+            font-family:inherit; transition:all 0.09s;
+        }
+        .stick-btn-group {
+            background:rgba(255,255,255,0.08); border:1.5px solid rgba(255,255,255,0.18);
+            border-radius:50%; width:42px; height:42px;
+            display:flex; align-items:center; justify-content:center;
+            font-size:0.74rem; font-weight:700; color:rgba(255,255,255,0.75);
+            font-family:inherit; transition:all 0.09s;
         }
 
-        /* Shoulder / Trigger */
-        .shoulder-group, .stick-btn-group {
-            background: rgba(255,255,255,0.07);
-            border: 1.5px solid rgba(255,255,255,0.15);
-            border-radius: 10px;
-            padding: 8px 18px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: rgba(255,255,255,0.75);
-            transition: background 0.1s, box-shadow 0.1s, transform 0.08s;
-        }
-        .stick-btn-group { border-radius: 50%; width: 40px; height: 40px; display:flex; align-items:center; justify-content:center; padding:0; }
-        .interactive-btn.active {
-            background: rgba(var(--rgb-glow),0.25);
-            border-color: var(--theme-glow);
-            box-shadow: 0 0 14px rgba(var(--rgb-glow),0.4);
-            transform: scale(0.93);
-        }
-
-        /* Racing */
+        /* Racing extras */
         .steer-btn {
-            background: rgba(255,255,255,0.07);
-            border: 2px solid rgba(255,255,255,0.15);
-            border-radius: 12px;
-            width: 60px; height: 60px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem; color: rgba(255,255,255,0.7);
-            transition: background 0.1s, transform 0.08s;
+            background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.18);
+            border-radius:12px; width:64px; height:64px;
+            display:flex; align-items:center; justify-content:center;
+            font-size:1.3rem; transition:all 0.09s;
         }
         .pedal-btn {
-            width: 60px; height: 80px;
-            background: rgba(255,255,255,0.07);
-            border: 2px solid rgba(255,255,255,0.15);
-            border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
+            background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.18);
+            border-radius:12px; width:62px; height:84px;
+            display:flex; align-items:center; justify-content:center; transition:all 0.09s;
         }
-        .pedal-btn svg { width: 28px; height: 28px; stroke: rgba(255,255,255,0.6); fill: none; }
-        .pedal-gas { border-color: rgba(var(--rgb-glow),0.4); }
+        .pedal-btn svg { width:28px; height:28px; stroke:rgba(255,255,255,0.65); fill:none; stroke-width:1.5; }
+        .pedal-gas { border-color:rgba(var(--rgb-glow),0.45); }
+        .gear-btn {
+            background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.18);
+            border-radius:10px; width:48px; height:48px; font-size:1.1rem;
+            display:flex; align-items:center; justify-content:center; transition:all 0.09s;
+        }
 
-        /* =====================================================
-           6. PANTALLA 3 - ESCANER BLUETOOTH
-           ===================================================== */
-        #screen-connect {
-            background: var(--bg-dark);
-            padding: 0;
-        }
+        /* ========== PANTALLA 3: ESCANER BT ========== */
+        #screen-connect { background:var(--bg-dark); flex-direction:column; }
 
         .scan-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 18px 20px 14px;
-            border-bottom: 1px solid rgba(255,255,255,0.07);
-            flex-shrink: 0;
+            display:flex; align-items:center; gap:12px;
+            padding:16px 18px 13px; border-bottom:1px solid rgba(255,255,255,0.07); flex-shrink:0;
         }
         .scan-back-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1.5px solid rgba(255,255,255,0.15);
-            color: white;
-            width: 38px; height: 38px;
-            border-radius: 50%;
-            font-size: 1.2rem;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; flex-shrink: 0;
+            background:rgba(255,255,255,0.06); border:1.5px solid rgba(255,255,255,0.15);
+            color:white; width:38px; height:38px; border-radius:50%;
+            font-size:1.2rem; display:flex; align-items:center; justify-content:center;
+            cursor:pointer; flex-shrink:0;
         }
-        .scan-header-info { flex: 1; }
-        .scan-header-info h2 { font-size: 1.05rem; font-weight: 700; }
-        .scan-header-info p { font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; }
-        .scan-dot {
-            width: 10px; height: 10px;
-            border-radius: 50%;
-            background: #555;
-            flex-shrink: 0;
-            transition: background 0.3s;
-        }
-        .scan-dot.scanning {
-            background: var(--theme-glow);
-            box-shadow: 0 0 8px var(--theme-glow);
-            animation: blink 1s infinite;
-        }
+        .scan-header-info { flex:1; }
+        .scan-header-info h2 { font-size:1rem; font-weight:700; }
+        .scan-header-info p  { font-size:0.72rem; color:var(--text-muted); margin-top:2px; }
+        .scan-dot { width:10px; height:10px; border-radius:50%; background:#555; flex-shrink:0; }
+        .scan-dot.on { background:var(--theme-glow); box-shadow:0 0 8px var(--theme-glow); animation:blink 1s infinite; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
         .scan-action-bar {
-            display: flex;
-            gap: 10px;
-            padding: 12px 20px;
-            flex-shrink: 0;
-            align-items: center;
+            display:flex; gap:10px; padding:11px 18px; flex-shrink:0; align-items:center;
         }
         .scan-badge {
-            background: rgba(var(--rgb-glow),0.1);
-            border: 1px solid rgba(var(--rgb-glow),0.25);
-            color: var(--theme-accent);
-            border-radius: 20px;
-            padding: 5px 14px;
-            font-size: 0.78rem;
-            font-weight: 600;
+            background:rgba(var(--rgb-glow),0.1); border:1px solid rgba(var(--rgb-glow),0.25);
+            color:var(--theme-accent); border-radius:20px; padding:5px 14px;
+            font-size:0.78rem; font-weight:600;
         }
 
-        #scan-list-wrapper { flex: 1; overflow-y: auto; padding: 6px 14px 14px; }
-        .scan-section-label {
-            font-size: 0.62rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 2.5px;
-            padding: 10px 6px 6px;
-            font-weight: 600;
+        #scan-list-wrapper { flex:1; overflow-y:auto; padding:4px 14px 14px; }
+        .scan-section-lbl {
+            font-size:0.62rem; color:var(--text-muted); text-transform:uppercase;
+            letter-spacing:2.5px; padding:10px 4px 5px; font-weight:600;
         }
         .device-row {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 13px 16px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.07);
-            background: rgba(255,255,255,0.02);
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: background 0.15s, border-color 0.15s;
+            display:flex; align-items:center; gap:13px;
+            padding:12px 15px; border-radius:12px;
+            border:1px solid rgba(255,255,255,0.07);
+            background:rgba(255,255,255,0.02); margin-bottom:8px;
+            cursor:pointer; transition:all 0.15s;
         }
-        .device-row:active { background: rgba(var(--rgb-glow),0.08); border-color: rgba(var(--rgb-glow),0.35); }
-        .device-row.is-pc { border-color: rgba(var(--rgb-glow),0.3); background: rgba(var(--rgb-glow),0.05); }
+        .device-row:active { background:rgba(var(--rgb-glow),0.1); border-color:rgba(var(--rgb-glow),0.4); }
+        .device-row.is-pc  { border-color:rgba(var(--rgb-glow),0.3); background:rgba(var(--rgb-glow),0.05); }
         .device-ico {
-            width: 40px; height: 40px;
-            border-radius: 10px;
-            background: rgba(255,255,255,0.06);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.3rem; flex-shrink: 0;
+            width:40px; height:40px; border-radius:10px;
+            background:rgba(255,255,255,0.06); display:flex; align-items:center;
+            justify-content:center; font-size:1.25rem; flex-shrink:0;
         }
-        .device-row.is-pc .device-ico { background: rgba(var(--rgb-glow),0.12); }
-        .device-info-col { flex: 1; min-width: 0; }
-        .device-name { font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .device-mac  { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+        .device-row.is-pc .device-ico { background:rgba(var(--rgb-glow),0.14); }
+        .device-info-col { flex:1; min-width:0; }
+        .device-name { font-size:0.9rem; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .device-mac  { font-size:0.7rem; color:var(--text-muted); margin-top:1px; }
         .device-pc-badge {
-            font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
-            padding: 3px 8px; border-radius: 6px;
-            background: rgba(var(--rgb-glow),0.18);
-            color: var(--theme-accent); flex-shrink: 0;
+            font-size:0.62rem; font-weight:700; text-transform:uppercase;
+            padding:3px 8px; border-radius:5px;
+            background:rgba(var(--rgb-glow),0.2); color:var(--theme-accent); flex-shrink:0;
         }
-        .scan-empty {
-            text-align: center;
-            color: var(--text-muted);
-            padding: 28px 20px;
-            font-size: 0.88rem;
-        }
+        .scan-empty { text-align:center; color:var(--text-muted); padding:28px 10px; font-size:0.88rem; line-height:1.6; }
 
-        /* =====================================================
-           7. PANTALLA 4 - CONECTANDO
-           ===================================================== */
+        /* ========== PANTALLA 4: CONECTANDO ========== */
         #screen-connecting {
-            background: var(--bg-dark);
-            justify-content: center;
-            align-items: center;
-            gap: 18px;
+            background:var(--bg-dark); justify-content:center; align-items:center;
+            gap:16px; text-align:center; padding:30px;
         }
         .spinner {
-            width: 60px; height: 60px;
-            border-radius: 50%;
-            border: 3px solid rgba(255,255,255,0.08);
-            border-top-color: var(--theme-glow);
-            animation: spin 0.9s linear infinite;
+            width:60px; height:60px; border-radius:50%;
+            border:3px solid rgba(255,255,255,0.08); border-top-color:var(--theme-glow);
+            animation:spin 0.85s linear infinite;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes spin { to { transform:rotate(360deg); } }
 
-        /* =====================================================
-           8. ANIMACIONES GENERALES
-           ===================================================== */
-        @keyframes ping { 75%, 100% { transform: scale(1.5); opacity: 0; } }
+        /* Pairing info box */
+        .pair-info-box {
+            background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+            border-radius:14px; padding:16px 18px; max-width:300px;
+            font-size:0.82rem; line-height:1.7; color:var(--text-muted); text-align:left;
+        }
+        .pair-info-box strong { color:var(--theme-accent); display:block; margin-bottom:4px; }
+        .pair-info-box ol { padding-left:18px; }
+        .pair-info-box li { margin-bottom:4px; }
     </style>
 </head>
 
 <body class="theme-init">
-    <canvas id="bg-canvas"></canvas>
+<canvas id="bg-canvas"></canvas>
 
-    <!-- ============================================================
-         PANTALLA 1: SELECCION (PORTRAIT)
-    ============================================================ -->
-    <div id="screen-selection" class="screen active">
-        <h1 class="header-title">GAME<span>BRIDGE</span></h1>
-        <p class="header-subtitle">Selecciona tu Perfil</p>
+<!-- ================================================================
+     PANTALLA 1: SELECCION (PORTRAIT)
+================================================================ -->
+<div id="screen-selection" class="screen active">
+    <h1 class="header-title">GameBridge</h1>
+    <p class="header-subtitle">Selecciona tu Perfil</p>
 
-        <div class="card-container">
+    <div class="card-container">
 
-            <div class="controller-card ps" id="card-ps" onclick="startSetup('ps')">
-                <div class="card-icon">
-                    <svg viewBox="0 0 24 24" stroke-width="1.5">
-                        <path d="M6 9h12a3 3 0 0 1 3 3v1a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-1a3 3 0 0 1 3-3z"/>
-                        <circle cx="8.5" cy="13" r="1.2"/>
-                        <circle cx="15.5" cy="13" r="1.2"/>
-                    </svg>
-                </div>
-                <div class="card-title">PlayStation</div>
-                <div class="card-desc">DualShock / DualSense</div>
+        <!-- PlayStation -->
+        <div class="controller-card ps" id="card-ps" onclick="startSetup('ps')">
+            <div class="card-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/>
+                    <circle cx="9" cy="14" r="1.5"/>
+                    <circle cx="15" cy="14" r="1.5"/>
+                </svg>
             </div>
-
-            <div class="controller-card xbox" id="card-xbox" onclick="startSetup('xbox')">
-                <div class="card-icon">
-                    <svg viewBox="0 0 24 24" stroke-width="1.5">
-                        <path d="M6 9h12a3 3 0 0 1 3 3v1a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-1a3 3 0 0 1 3-3z"/>
-                        <circle cx="7.5" cy="11" r="1.2"/>
-                        <circle cx="15.5" cy="13" r="1.2"/>
-                    </svg>
-                </div>
-                <div class="card-title">Xbox</div>
-                <div class="card-desc">Xbox Wireless Controller</div>
-            </div>
-
-            <div class="controller-card generic" id="card-generic" onclick="startSetup('generic')">
-                <div class="card-icon">
-                    <svg viewBox="0 0 24 24" stroke-width="1.5">
-                        <rect x="2" y="7" width="20" height="11" rx="5"/>
-                        <path d="M6 12h4M8 10v4"/>
-                        <circle cx="16" cy="12" r="1.3"/>
-                        <circle cx="18.5" cy="10" r="1.3"/>
-                    </svg>
-                </div>
-                <div class="card-title">Generico</div>
-                <div class="card-desc">Estandar HID</div>
-            </div>
-
-            <div class="controller-card racing" id="card-racing" onclick="startSetup('racing')">
-                <div class="card-icon">
-                    <svg viewBox="0 0 24 24" stroke-width="1.5">
-                        <circle cx="12" cy="12" r="9"/>
-                        <circle cx="12" cy="12" r="2.5"/>
-                        <path d="M12 14.5v5M5 9.5l6 3.5M19 9.5l-6 3.5"/>
-                    </svg>
-                </div>
-                <div class="card-title">Carreras</div>
-                <div class="card-desc">Giroscopio &amp; Pedales</div>
-            </div>
-
+            <div class="card-title">PlayStation</div>
+            <div class="card-desc">Sim&eacute;trico Azul</div>
         </div>
 
-        <div class="watermark">By <span>ElproFEsor</span></div>
+        <!-- Xbox -->
+        <div class="controller-card xbox" id="card-xbox" onclick="startSetup('xbox')">
+            <div class="card-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/>
+                    <circle cx="7" cy="10" r="1.5"/>
+                    <circle cx="15" cy="14" r="1.5"/>
+                </svg>
+            </div>
+            <div class="card-title">Xbox</div>
+            <div class="card-desc">Asim&eacute;trico Verde</div>
+        </div>
+
+        <!-- Generico -->
+        <div class="controller-card generic" id="card-generic" onclick="startSetup('generic')">
+            <div class="card-icon">
+                <svg viewBox="0 0 24 24">
+                    <rect x="2" y="6" width="20" height="12" rx="6"/>
+                    <path d="M6 12h4"/><path d="M8 10v4"/>
+                    <circle cx="16" cy="12" r="1.5"/>
+                    <circle cx="18" cy="10" r="1.5"/>
+                </svg>
+            </div>
+            <div class="card-title">Gen&eacute;rico</div>
+            <div class="card-desc">Est&aacute;ndar Naranja</div>
+        </div>
+
+        <!-- Carreras -->
+        <div class="controller-card racing" id="card-racing" onclick="startSetup('racing')">
+            <div class="card-icon">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="2"/>
+                    <path d="M12 14v8M4 9l7 4M20 9l-7 4"/>
+                </svg>
+            </div>
+            <div class="card-title">Carreras</div>
+            <div class="card-desc">Giroscopio &amp; Pedales</div>
+        </div>
+
     </div>
+    <div class="watermark">By <span>ElproFEsor</span></div>
+</div>
 
-    <!-- ============================================================
-         PANTALLA 2: GAMEPAD (LANDSCAPE - se activa al elegir mando)
-    ============================================================ -->
-    <div id="screen-gamepad" class="screen">
-        <div class="editor-grid" id="editor-grid"></div>
+<!-- ================================================================
+     PANTALLA 2: GAMEPAD (cambia a LANDSCAPE al seleccionar)
+================================================================ -->
+<div id="screen-gamepad" class="screen">
+    <div class="editor-grid" id="editor-grid"></div>
 
-        <!-- TOOLBAR -->
-        <div class="top-toolbar" id="toolbar">
-            <button class="btn-back-circle" id="btn-back" onclick="goBackToSelection()" style="display:none;">&#8592;</button>
-            <div class="status-badge" id="hud-status">
-                <span class="dot"></span>
-                <span id="hud-title">Modo Prueba</span>
-            </div>
-            <div id="test-controls">
-                <button class="btn btn-outline" onclick="setMode('edit')">&#9881; Editar</button>
-                <button class="btn btn-primary" onclick="connectToPC()">Conectar &#10145;</button>
-                <button class="btn btn-outline" id="btn-settings" onclick="toggleSettings()" style="padding:7px 12px; border-radius:50%;">&#9881;</button>
-            </div>
-            <div id="edit-controls">
-                <button class="btn btn-outline" onclick="resetLayoutToDefault()">&#8634; Restaurar</button>
-                <button class="btn btn-outline" onclick="openLoadModal()">Cargar</button>
-                <button class="btn btn-primary" onclick="openSaveModal()">&#10003; Guardar</button>
-                <button class="btn btn-danger" onclick="exitEditMode()">&#10006; Salir</button>
-            </div>
+    <!-- TOOLBAR -->
+    <div class="top-toolbar" id="toolbar">
+        <button class="btn-back-circle" id="btn-back" onclick="goBackToSelection()" style="display:none;">&#8592;</button>
+        <div class="status-badge" id="hud-status">
+            <span class="dot"></span>
+            <span id="hud-title">Modo Prueba</span>
         </div>
-
-        <!-- MODAL: VIBRACION -->
-        <div class="settings-modal" id="settings-modal">
-            <div class="settings-title">Fuerza de Vibracion</div>
-            <div class="haptic-opts">
-                <button class="opt-btn" onclick="setHapticLvl(0)">OFF</button>
-                <button class="opt-btn" onclick="setHapticLvl(0.5)">Suave</button>
-                <button class="opt-btn active" onclick="setHapticLvl(1)">Media</button>
-                <button class="opt-btn" onclick="setHapticLvl(2)">Fuerte</button>
-            </div>
+        <div id="test-controls">
+            <button class="btn btn-outline" onclick="setMode('edit')">&#9881; Editar</button>
+            <button class="btn btn-primary" onclick="connectToPC()">Conectar &#10145;</button>
+            <button class="btn btn-outline" onclick="toggleModal('settings-modal')" style="padding:7px 12px;border-radius:50%;">&#9881;</button>
         </div>
-
-        <!-- MODAL: GUARDAR LAYOUT -->
-        <div class="settings-modal" id="save-modal">
-            <div class="settings-title">Guardar Layout</div>
-            <input type="text" id="layout-name-input" placeholder="Nombre del perfil..." style="width:100%; padding:10px; margin-bottom:14px; border-radius:8px; border:none; background:#222; color:white; font-size:1rem; font-family:Outfit,sans-serif; outline:none; text-align:center;">
-            <div style="display:flex; gap:10px; justify-content:center;">
-                <button class="btn btn-outline" onclick="closeModals()">Cancelar</button>
-                <button class="btn btn-primary" onclick="saveLayoutConfirm()">Confirmar</button>
-            </div>
-        </div>
-
-        <!-- MODAL: CARGAR LAYOUT -->
-        <div class="settings-modal" id="load-modal" style="max-height:60vh; overflow-y:auto;">
-            <div class="settings-title">Mis Layouts</div>
-            <div id="load-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;"></div>
-            <div style="display:flex; justify-content:center;">
-                <button class="btn btn-outline" onclick="closeModals()">Cerrar</button>
-            </div>
-        </div>
-
-        <!-- BARRA DE ESCALA -->
-        <div class="scale-panel" id="scale-panel">
-            <span style="color:white; font-size:0.88rem; font-weight:700;">TAMANO:</span>
-            <input type="range" id="size-slider" min="0.5" max="2" step="0.1" value="1">
-            <span id="scale-value">1.0x</span>
-        </div>
-
-        <!-- AREA DE GAMEPAD -->
-        <div class="gamepad-container state-test" id="gamepad-area">
-
-            <!-- === ELEMENTOS ESTANDAR === -->
-            <div class="gp-element standard-el" id="el-lstick" data-id="lstick">
-                <div class="analog-stick">
-                    <div class="analog-thumb" id="thumb-l"></div>
-                </div>
-            </div>
-            <div class="gp-element standard-el" id="el-rstick" data-id="rstick">
-                <div class="analog-stick">
-                    <div class="analog-thumb" id="thumb-r"></div>
-                </div>
-            </div>
-            <div class="gp-element standard-el" id="el-dpad" data-id="dpad">
-                <div class="dpad">
-                    <div class="d-center"></div>
-                    <div class="d-btn d-up interactive-btn">&#9650;</div>
-                    <div class="d-btn d-down interactive-btn">&#9660;</div>
-                    <div class="d-btn d-left interactive-btn">&#9664;</div>
-                    <div class="d-btn d-right interactive-btn">&#9654;</div>
-                </div>
-            </div>
-
-            <div class="gp-element standard-el" id="el-btn-top"   data-id="btn-top">
-                <div class="act-btn act-top interactive-btn"   id="lbl-top"   style="position:relative;">Y</div>
-            </div>
-            <div class="gp-element standard-el" id="el-btn-bot"   data-id="btn-bot">
-                <div class="act-btn act-bottom interactive-btn" id="lbl-bot"  style="position:relative;">A</div>
-            </div>
-            <div class="gp-element standard-el" id="el-btn-left"  data-id="btn-left">
-                <div class="act-btn act-left interactive-btn"  id="lbl-left"  style="position:relative;">X</div>
-            </div>
-            <div class="gp-element standard-el" id="el-btn-right" data-id="btn-right">
-                <div class="act-btn act-right interactive-btn" id="lbl-right" style="position:relative;">B</div>
-            </div>
-
-            <div class="gp-element standard-el" id="el-l1" data-id="l1">
-                <div class="shoulder-group interactive-btn" id="lbl-l1">L1</div>
-            </div>
-            <div class="gp-element standard-el" id="el-r1" data-id="r1">
-                <div class="shoulder-group interactive-btn" id="lbl-r1">R1</div>
-            </div>
-            <div class="gp-element standard-el" id="el-l2" data-id="l2">
-                <div class="shoulder-group interactive-btn" id="lbl-l2">L2</div>
-            </div>
-            <div class="gp-element standard-el" id="el-r2" data-id="r2">
-                <div class="shoulder-group interactive-btn" id="lbl-r2">R2</div>
-            </div>
-            <div class="gp-element standard-el" id="el-l3" data-id="l3">
-                <div class="stick-btn-group interactive-btn" id="lbl-l3">L3</div>
-            </div>
-            <div class="gp-element standard-el" id="el-r3" data-id="r3">
-                <div class="stick-btn-group interactive-btn" id="lbl-r3">R3</div>
-            </div>
-
-            <!-- === ELEMENTOS RACING === -->
-            <div class="gp-element racing-el" id="el-steer-left" data-id="steer-left">
-                <div class="steer-btn interactive-btn">&#9664;</div>
-            </div>
-            <div class="gp-element racing-el" id="el-steer-right" data-id="steer-right">
-                <div class="steer-btn interactive-btn">&#9654;</div>
-            </div>
-            <div class="gp-element racing-el" id="el-gas" data-id="gas">
-                <div class="pedal-btn pedal-gas interactive-btn">
-                    <svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="10" y1="6" x2="14" y2="6"/></svg>
-                </div>
-            </div>
-            <div class="gp-element racing-el" id="el-brake" data-id="brake">
-                <div class="pedal-btn interactive-btn">
-                    <svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
-                </div>
-            </div>
-            <div class="gp-element racing-el" id="el-nitrous" data-id="nitrous">
-                <div class="act-btn interactive-btn" style="position:relative;">N2O</div>
-            </div>
-            <div class="gp-element racing-el" id="el-cam" data-id="cam">
-                <div class="stick-btn-group interactive-btn">CAM</div>
-            </div>
-
+        <div id="edit-controls">
+            <button class="btn btn-outline" onclick="resetLayoutToDefault()">&#8634; Restaurar</button>
+            <button class="btn btn-outline" onclick="openLoadModal()">Cargar</button>
+            <button class="btn btn-primary" onclick="openSaveModal()">&#10003; Guardar</button>
+            <button class="btn btn-danger" onclick="exitEditMode()">&#10006; Salir</button>
         </div>
     </div>
 
-    <!-- ============================================================
-         PANTALLA 3: ESCANER BLUETOOTH
-    ============================================================ -->
-    <div id="screen-connect" class="screen">
-        <div class="scan-header">
-            <button class="scan-back-btn" onclick="goBackToSelection()">&#8592;</button>
-            <div class="scan-header-info">
-                <h2>Buscar PC</h2>
-                <p id="scan-subtitle">Dispositivos al alcance</p>
-            </div>
-            <div class="scan-dot" id="scan-dot"></div>
-        </div>
-
-        <div class="scan-action-bar">
-            <span class="scan-badge" id="scan-badge">Xbox</span>
-            <button class="btn btn-primary" onclick="startBluetoothScan()" style="font-size:0.82rem; padding:7px 16px;">Buscar</button>
-            <button class="btn btn-outline" onclick="goBackToSelection()" style="font-size:0.82rem; padding:7px 16px; margin-left:auto;">Cancelar</button>
-        </div>
-
-        <div id="scan-list-wrapper">
-            <div class="scan-section-label">COMPUTADORAS DETECTADAS</div>
-            <div id="scan-computers">
-                <div class="scan-empty">Presiona "Buscar" para escanear...</div>
-            </div>
-            <div class="scan-section-label" id="scan-others-label" style="display:none;">OTROS DISPOSITIVOS</div>
-            <div id="scan-others"></div>
+    <!-- MODAL: VIBRACION -->
+    <div class="modal" id="settings-modal">
+        <div class="modal-title">Fuerza de Vibracion</div>
+        <div class="haptic-opts">
+            <button class="opt-btn" onclick="setHaptic(0)">OFF</button>
+            <button class="opt-btn" onclick="setHaptic(0.5)">Suave</button>
+            <button class="opt-btn sel" onclick="setHaptic(1)">Media</button>
+            <button class="opt-btn" onclick="setHaptic(2)">Fuerte</button>
         </div>
     </div>
 
-    <!-- ============================================================
-         PANTALLA 4: CONECTANDO...
-    ============================================================ -->
-    <div id="screen-connecting" class="screen">
-        <div class="spinner"></div>
-        <h2 id="conn-title" style="font-size:1.1rem; font-weight:700;">Conectando...</h2>
-        <p id="conn-sub" style="color:var(--text-muted); font-size:0.85rem; text-align:center; max-width:260px;">Acepta el emparejamiento en tu PC</p>
-        <button class="btn btn-outline" onclick="goBackToSelection()" style="margin-top:10px;">Cancelar</button>
+    <!-- MODAL: GUARDAR -->
+    <div class="modal" id="save-modal">
+        <div class="modal-title">Guardar Layout</div>
+        <input type="text" id="layout-name-input" placeholder="Nombre del perfil...">
+        <div class="modal-row">
+            <button class="btn btn-outline" style="flex:1" onclick="closeAllModals()">Cancelar</button>
+            <button class="btn btn-primary" style="flex:1" onclick="confirmSave()">Guardar</button>
+        </div>
     </div>
 
-    <!-- ============================================================
-         JAVASCRIPT
-    ============================================================ -->
-    <script>
-    // ============================================================
-    // ESTADO GLOBAL
-    // ============================================================
-    var currentType  = 'init';
-    var appState     = 'test';
-    var currentLayoutData = {};
-    var hapticLevel  = 1;
-    var currentRgbGlow = '139,92,246';
-    var activeElement = null;
-    var isDragging    = false;
-    var dragOffset    = { x: 0, y: 0 };
+    <!-- MODAL: CARGAR -->
+    <div class="modal" id="load-modal" style="max-height:55vh;overflow-y:auto;">
+        <div class="modal-title">Mis Layouts</div>
+        <div id="load-list"></div>
+        <button class="btn btn-outline" onclick="closeAllModals()">Cerrar</button>
+    </div>
 
-    // ============================================================
-    // LAYOUTS POR DEFECTO
-    // ============================================================
-    var defaultLayouts = {
-        ps: {
-            l2:       { cx:18, cy:18, ox:0, oy:0, s:1 },
-            r2:       { cx:82, cy:18, ox:0, oy:0, s:1 },
-            l1:       { cx:18, cy:30, ox:0, oy:0, s:1 },
-            r1:       { cx:82, cy:30, ox:0, oy:0, s:1 },
-            dpad:     { cx:20, cy:62, ox:0, oy:0, s:1.1 },
-            lstick:   { cx:36, cy:75, ox:0, oy:0, s:1 },
-            rstick:   { cx:64, cy:75, ox:0, oy:0, s:1 },
-            l3:       { cx:28, cy:78, ox:0, oy:0, s:0.85 },
-            r3:       { cx:72, cy:78, ox:0, oy:0, s:0.85 },
-            'btn-top':   { cx:80, cy:55, ox:0,   oy:-48, s:1.1 },
-            'btn-bot':   { cx:80, cy:55, ox:0,   oy:48,  s:1.1 },
-            'btn-left':  { cx:80, cy:55, ox:-48, oy:0,   s:1.1 },
-            'btn-right': { cx:80, cy:55, ox:48,  oy:0,   s:1.1 }
-        },
-        xbox: {
-            l2:       { cx:18, cy:18, ox:0, oy:0, s:1 },
-            r2:       { cx:82, cy:18, ox:0, oy:0, s:1 },
-            l1:       { cx:18, cy:30, ox:0, oy:0, s:1 },
-            r1:       { cx:82, cy:30, ox:0, oy:0, s:1 },
-            lstick:   { cx:20, cy:55, ox:0, oy:0, s:1 },
-            dpad:     { cx:36, cy:75, ox:0, oy:0, s:1.1 },
-            rstick:   { cx:64, cy:75, ox:0, oy:0, s:1 },
-            l3:       { cx:30, cy:58, ox:0, oy:0, s:0.85 },
-            r3:       { cx:72, cy:78, ox:0, oy:0, s:0.85 },
-            'btn-top':   { cx:80, cy:55, ox:0,   oy:-48, s:1.1 },
-            'btn-bot':   { cx:80, cy:55, ox:0,   oy:48,  s:1.1 },
-            'btn-left':  { cx:80, cy:55, ox:-48, oy:0,   s:1.1 },
-            'btn-right': { cx:80, cy:55, ox:48,  oy:0,   s:1.1 }
-        },
-        generic: {
-            l2:       { cx:18, cy:18, ox:0, oy:0, s:1 },
-            r2:       { cx:82, cy:18, ox:0, oy:0, s:1 },
-            l1:       { cx:18, cy:30, ox:0, oy:0, s:1 },
-            r1:       { cx:82, cy:30, ox:0, oy:0, s:1 },
-            dpad:     { cx:20, cy:62, ox:0, oy:0, s:1.1 },
-            lstick:   { cx:36, cy:75, ox:0, oy:0, s:1 },
-            rstick:   { cx:64, cy:75, ox:0, oy:0, s:1 },
-            l3:       { cx:28, cy:78, ox:0, oy:0, s:0.85 },
-            r3:       { cx:72, cy:78, ox:0, oy:0, s:0.85 },
-            'btn-top':   { cx:80, cy:55, ox:0,   oy:-48, s:1.1 },
-            'btn-bot':   { cx:80, cy:55, ox:0,   oy:48,  s:1.1 },
-            'btn-left':  { cx:80, cy:55, ox:-48, oy:0,   s:1.1 },
-            'btn-right': { cx:80, cy:55, ox:48,  oy:0,   s:1.1 }
-        },
-        racing: {
-            'steer-left':  { cx:20, cy:50, ox:0, oy:0, s:1.2 },
-            'steer-right': { cx:80, cy:50, ox:0, oy:0, s:1.2 },
-            l1: { cx:18, cy:20, ox:0, oy:0, s:1 },
-            r1: { cx:82, cy:20, ox:0, oy:0, s:1 },
-            l2: { cx:18, cy:32, ox:0, oy:0, s:1 },
-            r2: { cx:82, cy:32, ox:0, oy:0, s:1 },
-            gas:     { cx:80, cy:72, ox:0, oy:0, s:1.2 },
-            brake:   { cx:65, cy:78, ox:0, oy:0, s:1.1 },
-            nitrous: { cx:50, cy:82, ox:0, oy:0, s:1 },
-            cam:     { cx:50, cy:18, ox:0, oy:0, s:0.9 },
-            lstick:  { cx:35, cy:60, ox:0, oy:0, s:1 },
-            rstick:  { cx:65, cy:60, ox:0, oy:0, s:1 },
-            dpad:    { cx:20, cy:72, ox:0, oy:0, s:1 },
-            l3:      { cx:30, cy:70, ox:0, oy:0, s:0.8 },
-            r3:      { cx:70, cy:70, ox:0, oy:0, s:0.8 },
-            'btn-top':   { cx:85, cy:45, ox:0,   oy:-40, s:1 },
-            'btn-bot':   { cx:85, cy:45, ox:0,   oy:40,  s:1 },
-            'btn-left':  { cx:85, cy:45, ox:-40, oy:0,   s:1 },
-            'btn-right': { cx:85, cy:45, ox:40,  oy:0,   s:1 }
-        }
-    };
+    <!-- ESCALA -->
+    <div class="scale-panel" id="scale-panel">
+        <span style="font-size:0.86rem;font-weight:700;">TAMA&Ntilde;O:</span>
+        <input type="range" id="size-slider" min="0.5" max="2" step="0.05" value="1">
+        <span id="scale-value" style="font-size:0.85rem;min-width:35px;">1.0x</span>
+    </div>
 
-    // ============================================================
-    // UTILIDADES
-    // ============================================================
-    function showScreen(id) {
-        var screens = document.querySelectorAll('.screen');
-        for (var i = 0; i < screens.length; i++) {
-            screens[i].classList.remove('active');
-        }
-        document.getElementById(id).classList.add('active');
+    <!-- AREA DEL GAMEPAD -->
+    <div class="gamepad-container state-test" id="gamepad-area">
+
+        <!-- ===== ESTANDAR ===== -->
+        <div class="gp-element standard-el" id="el-lstick" data-id="lstick">
+            <div class="analog-stick"><div class="analog-thumb" id="thumb-l"></div></div>
+        </div>
+        <div class="gp-element standard-el" id="el-rstick" data-id="rstick">
+            <div class="analog-stick"><div class="analog-thumb" id="thumb-r"></div></div>
+        </div>
+        <div class="gp-element standard-el" id="el-dpad" data-id="dpad">
+            <div class="dpad">
+                <div class="d-center"></div>
+                <div class="d-btn d-up interactive-btn">&#9650;</div>
+                <div class="d-btn d-down interactive-btn">&#9660;</div>
+                <div class="d-btn d-left interactive-btn">&#9664;</div>
+                <div class="d-btn d-right interactive-btn">&#9654;</div>
+            </div>
+        </div>
+        <div class="gp-element standard-el" id="el-btn-top"   data-id="btn-top">
+            <div class="act-btn act-top interactive-btn"    id="lbl-top">Y</div>
+        </div>
+        <div class="gp-element standard-el" id="el-btn-bot"   data-id="btn-bot">
+            <div class="act-btn act-bottom interactive-btn" id="lbl-bot">A</div>
+        </div>
+        <div class="gp-element standard-el" id="el-btn-left"  data-id="btn-left">
+            <div class="act-btn act-left interactive-btn"   id="lbl-left">X</div>
+        </div>
+        <div class="gp-element standard-el" id="el-btn-right" data-id="btn-right">
+            <div class="act-btn act-right interactive-btn"  id="lbl-right">B</div>
+        </div>
+        <div class="gp-element standard-el" id="el-l1" data-id="l1">
+            <div class="shoulder-group interactive-btn" id="lbl-l1">L1</div>
+        </div>
+        <div class="gp-element standard-el" id="el-r1" data-id="r1">
+            <div class="shoulder-group interactive-btn" id="lbl-r1">R1</div>
+        </div>
+        <div class="gp-element standard-el" id="el-l2" data-id="l2">
+            <div class="shoulder-group interactive-btn" id="lbl-l2">L2</div>
+        </div>
+        <div class="gp-element standard-el" id="el-r2" data-id="r2">
+            <div class="shoulder-group interactive-btn" id="lbl-r2">R2</div>
+        </div>
+        <div class="gp-element standard-el" id="el-l3" data-id="l3">
+            <div class="stick-btn-group interactive-btn" id="lbl-l3">L3</div>
+        </div>
+        <div class="gp-element standard-el" id="el-r3" data-id="r3">
+            <div class="stick-btn-group interactive-btn" id="lbl-r3">R3</div>
+        </div>
+
+        <!-- ===== RACING EXTRA ===== -->
+        <div class="gp-element racing-el" id="el-steer-left"  data-id="steer-left">
+            <div class="steer-btn interactive-btn">&#9664;</div>
+        </div>
+        <div class="gp-element racing-el" id="el-steer-right" data-id="steer-right">
+            <div class="steer-btn interactive-btn">&#9654;</div>
+        </div>
+        <div class="gp-element racing-el" id="el-gas"    data-id="gas">
+            <div class="pedal-btn pedal-gas interactive-btn">
+                <svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="10" y1="6" x2="14" y2="6"/></svg>
+            </div>
+        </div>
+        <div class="gp-element racing-el" id="el-brake"  data-id="brake">
+            <div class="pedal-btn interactive-btn">
+                <svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg>
+            </div>
+        </div>
+        <div class="gp-element racing-el" id="el-gear-up"   data-id="gear-up">
+            <div class="gear-btn interactive-btn">&#9651;</div>
+        </div>
+        <div class="gp-element racing-el" id="el-gear-down" data-id="gear-down">
+            <div class="gear-btn interactive-btn">&#9661;</div>
+        </div>
+        <div class="gp-element racing-el" id="el-nitrous" data-id="nitrous">
+            <div class="act-btn interactive-btn">N2O</div>
+        </div>
+        <div class="gp-element racing-el" id="el-cam" data-id="cam">
+            <div class="stick-btn-group interactive-btn">CAM</div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ================================================================
+     PANTALLA 3: ESCANER BLUETOOTH
+================================================================ -->
+<div id="screen-connect" class="screen">
+    <div class="scan-header">
+        <button class="scan-back-btn" onclick="goBackToSelection()">&#8592;</button>
+        <div class="scan-header-info">
+            <h2>Buscar PC</h2>
+            <p id="scan-subtitle">Presiona Buscar para iniciar el escaneo</p>
+        </div>
+        <div class="scan-dot" id="scan-dot"></div>
+    </div>
+    <div class="scan-action-bar">
+        <span class="scan-badge" id="scan-badge">Xbox</span>
+        <button class="btn btn-primary" onclick="startBluetoothScan()" style="font-size:0.82rem;padding:7px 16px;">&#128268; Buscar</button>
+        <button class="btn btn-outline" onclick="goBackToSelection()" style="font-size:0.82rem;padding:7px 16px;margin-left:auto;">Cancelar</button>
+    </div>
+    <div id="scan-list-wrapper">
+        <div class="scan-section-lbl">COMPUTADORAS DETECTADAS</div>
+        <div id="scan-computers"><div class="scan-empty">Presiona "Buscar" para escanear...</div></div>
+        <div class="scan-section-lbl" id="scan-others-lbl" style="display:none;">OTROS DISPOSITIVOS</div>
+        <div id="scan-others"></div>
+    </div>
+</div>
+
+<!-- ================================================================
+     PANTALLA 4: CONECTANDO
+================================================================ -->
+<div id="screen-connecting" class="screen">
+    <div class="spinner"></div>
+    <h2 id="conn-title" style="font-size:1.15rem;font-weight:700;">Conectando...</h2>
+    <p id="conn-sub" style="color:var(--text-muted);font-size:0.85rem;max-width:280px;">Espera...</p>
+
+    <div class="pair-info-box" id="pair-info">
+        <strong>&#128172; Emparejar en Windows</strong>
+        <ol>
+            <li>Abre <b>Configuraci&oacute;n &rarr; Bluetooth</b> en tu PC</li>
+            <li>Pulsa <b>"Agregar dispositivo"</b></li>
+            <li>Busca <b id="pair-device-name">Xbox Wireless Controller</b></li>
+            <li>Haz clic en el dispositivo y confirma si te pide c&oacute;digo</li>
+        </ol>
+    </div>
+
+    <button class="btn btn-outline" onclick="goBackToSelection()" style="margin-top:8px;">Cancelar</button>
+</div>
+
+<!-- ================================================================
+     JAVASCRIPT
+================================================================ -->
+<script>
+/* ================================================================
+   ESTADO GLOBAL
+================================================================ */
+var currentType   = 'init';
+var appState      = 'test';
+var hapticLevel   = 1;
+var currentRgbGlow = '170,85,255';
+var activeEl      = null;
+var isDragging    = false;
+var dragOfsX      = 0;
+var dragOfsY      = 0;
+
+/* ================================================================
+   LAYOUTS POR DEFECTO (posiciones en % de pantalla)
+================================================================ */
+var defaultLayouts = {
+    ps: {
+        l2:       {cx:12, cy:16}, r2:    {cx:88, cy:16},
+        l1:       {cx:12, cy:28}, r1:    {cx:88, cy:28},
+        dpad:     {cx:20, cy:65},
+        lstick:   {cx:34, cy:77},
+        rstick:   {cx:66, cy:77},
+        l3:       {cx:26, cy:80}, r3:    {cx:74, cy:80},
+        'btn-top':  {cx:80, cy:42}, 'btn-bot': {cx:80, cy:64},
+        'btn-left': {cx:69, cy:53}, 'btn-right':{cx:91, cy:53}
+    },
+    xbox: {
+        l2:       {cx:12, cy:16}, r2:    {cx:88, cy:16},
+        l1:       {cx:12, cy:28}, r1:    {cx:88, cy:28},
+        lstick:   {cx:23, cy:55},
+        dpad:     {cx:34, cy:77},
+        rstick:   {cx:65, cy:77},
+        l3:       {cx:30, cy:60}, r3:    {cx:74, cy:80},
+        'btn-top':  {cx:80, cy:42}, 'btn-bot': {cx:80, cy:64},
+        'btn-left': {cx:69, cy:53}, 'btn-right':{cx:91, cy:53}
+    },
+    generic: {
+        l2:       {cx:12, cy:16}, r2:    {cx:88, cy:16},
+        l1:       {cx:12, cy:28}, r1:    {cx:88, cy:28},
+        dpad:     {cx:20, cy:65},
+        lstick:   {cx:34, cy:77},
+        rstick:   {cx:66, cy:77},
+        l3:       {cx:26, cy:80}, r3:    {cx:74, cy:80},
+        'btn-top':  {cx:80, cy:42}, 'btn-bot': {cx:80, cy:64},
+        'btn-left': {cx:69, cy:53}, 'btn-right':{cx:91, cy:53}
+    },
+    racing: {
+        'steer-left': {cx:22, cy:50}, 'steer-right':{cx:78, cy:50},
+        l1:{cx:10,cy:20}, r1:{cx:90,cy:20}, l2:{cx:10,cy:32}, r2:{cx:90,cy:32},
+        gas:{cx:82,cy:70}, brake:{cx:66,cy:78},
+        'gear-up':{cx:50,cy:25}, 'gear-down':{cx:50,cy:40},
+        nitrous:{cx:50,cy:82}, cam:{cx:50,cy:16},
+        lstick:{cx:30,cy:62}, rstick:{cx:70,cy:62},
+        dpad:{cx:22,cy:78}, l3:{cx:22,cy:85}, r3:{cx:78,cy:85},
+        'btn-top':  {cx:82, cy:42}, 'btn-bot': {cx:82, cy:62},
+        'btn-left': {cx:71, cy:52}, 'btn-right':{cx:93, cy:52}
     }
+};
 
-    function hapticUI(pattern) {
-        if (!window.navigator || !window.navigator.vibrate) return;
-        var p = Array.isArray(pattern) ? pattern : [pattern * hapticLevel];
-        navigator.vibrate(p);
+/* ================================================================
+   PARTICULAS DE FONDO
+================================================================ */
+var bgCanvas = document.getElementById('bg-canvas');
+var bgCtx    = bgCanvas.getContext('2d');
+var particles = [];
+
+function resizeBg() { bgCanvas.width = window.innerWidth; bgCanvas.height = window.innerHeight; }
+window.addEventListener('resize', resizeBg);
+resizeBg();
+
+function Ptcl() { this.r(true); }
+Ptcl.prototype.r = function(rand) {
+    this.x = Math.random() * bgCanvas.width;
+    this.y = rand ? Math.random() * bgCanvas.height : bgCanvas.height + 5;
+    this.sz = Math.random() * 1.6 + 0.3;
+    this.vy = -(Math.random() * 0.65 + 0.18);
+    this.vx = (Math.random() - 0.5) * 0.5;
+    this.op = Math.random() * 0.42 + 0.08;
+};
+Ptcl.prototype.u = function() {
+    this.x += this.vx; this.y += this.vy; this.op -= 0.001;
+    if (this.y < -8 || this.op <= 0) this.r(false);
+};
+for (var i = 0; i < 55; i++) particles.push(new Ptcl());
+
+function drawBg() {
+    bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+    for (var i = 0; i < particles.length; i++) {
+        particles[i].u();
+        bgCtx.beginPath();
+        bgCtx.arc(particles[i].x, particles[i].y, particles[i].sz, 0, Math.PI * 2);
+        bgCtx.fillStyle = 'rgba(' + currentRgbGlow + ',' + particles[i].op + ')';
+        bgCtx.fill();
     }
+    requestAnimationFrame(drawBg);
+}
+drawBg();
 
-    function closeModals() {
-        var ids = ['settings-modal', 'save-modal', 'load-modal'];
-        for (var i = 0; i < ids.length; i++) {
-            var el = document.getElementById(ids[i]);
-            if (el) el.classList.remove('active');
-        }
+/* ================================================================
+   UTILIDADES
+================================================================ */
+function showScreen(id) {
+    var screens = document.querySelectorAll('.screen');
+    for (var s = 0; s < screens.length; s++) screens[s].classList.remove('active');
+    document.getElementById(id).classList.add('active');
+}
+
+function hapticUI(ms) {
+    if (!navigator.vibrate || hapticLevel === 0) return;
+    var v = Array.isArray(ms) ? ms : [Math.round(ms * hapticLevel)];
+    navigator.vibrate(v);
+}
+
+function closeAllModals() {
+    var ms = document.querySelectorAll('.modal');
+    for (var i = 0; i < ms.length; i++) ms[i].classList.remove('active');
+    document.getElementById('scale-panel').classList.remove('active');
+}
+
+function toggleModal(id) {
+    var el = document.getElementById(id);
+    var wasActive = el.classList.contains('active');
+    closeAllModals();
+    if (!wasActive) el.classList.add('active');
+}
+
+function setHaptic(lvl) {
+    hapticLevel = lvl;
+    var btns = document.querySelectorAll('.opt-btn');
+    for (var b = 0; b < btns.length; b++) btns[b].classList.remove('sel');
+    event.target.classList.add('sel');
+    hapticUI(25);
+}
+
+/* ================================================================
+   LAYOUT: APLICAR
+   IMPORTANTE: llamar DESPUES de que el DOM se haya pintado
+================================================================ */
+function applyLayout(data) {
+    var els = document.querySelectorAll('.gp-element');
+    var W   = window.innerWidth;
+    var H   = window.innerHeight;
+    for (var i = 0; i < els.length; i++) {
+        var el  = els[i];
+        var key = el.dataset.id;
+        var d   = data[key];
+        if (!d) continue;
+        /* Forzar recalculo de dimensiones con getBoundingClientRect
+           si el elemento tiene dimension 0 usar valores tipicos */
+        var rect = el.getBoundingClientRect();
+        var hw = (rect.width  > 0 ? rect.width  : 60) / 2;
+        var hh = (rect.height > 0 ? rect.height : 60) / 2;
+        var scale = d.s || 1;
+        el.style.left      = ((d.cx / 100) * W - hw) + 'px';
+        el.style.top       = ((d.cy / 100) * H - hh) + 'px';
+        el.style.transform = 'scale(' + scale + ')';
+        el.dataset.scale   = scale;
     }
+}
 
-    function toggleSettings() {
-        closeModals();
-        document.getElementById('settings-modal').classList.toggle('active');
-    }
-
-    function setHapticLvl(lvl) {
-        hapticLevel = lvl;
-        var btns = document.querySelectorAll('.opt-btn');
-        for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
-        event.target.classList.add('active');
-        hapticUI(30);
-    }
-
-    // ============================================================
-    // SISTEMA DE PARTICULAS (FONDO)
-    // ============================================================
-    var canvas = document.getElementById('bg-canvas');
-    var ctx = canvas.getContext('2d');
-    var particles = [];
-
-    function resizeCanvas() {
-        canvas.width  = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    function Particle() { this.reset(true); }
-    Particle.prototype.reset = function(randY) {
-        this.x = Math.random() * canvas.width;
-        this.y = randY ? Math.random() * canvas.height : canvas.height + 10;
-        this.size   = Math.random() * 1.8 + 0.4;
-        this.speedY = -(Math.random() * 0.7 + 0.2);
-        this.speedX = (Math.random() - 0.5) * 0.6;
-        this.opacity = Math.random() * 0.45 + 0.1;
-    };
-    Particle.prototype.update = function() {
-        this.y += this.speedY; this.x += this.speedX; this.opacity -= 0.0012;
-        if (this.y < -10 || this.opacity <= 0) this.reset(false);
-    };
-    Particle.prototype.draw = function() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(' + currentRgbGlow + ',' + this.opacity + ')';
-        ctx.fill();
-    };
-
-    for (var p = 0; p < 55; p++) particles.push(new Particle());
-
-    function animateParticles() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (var i = 0; i < particles.length; i++) { particles[i].update(); particles[i].draw(); }
-        requestAnimationFrame(animateParticles);
-    }
-    animateParticles();
-
-    // ============================================================
-    // LAYOUT: CARGA Y GUARDADO
-    // ============================================================
-    function loadLayout() {
-        var saved = localStorage.getItem('gb_layout_' + currentType);
-        var data  = saved ? JSON.parse(saved) : defaultLayouts[currentType];
-        if (!data) return;
-        currentLayoutData = JSON.parse(JSON.stringify(data));
-        applyLayout(currentLayoutData);
-    }
-
-    function applyLayout(data) {
-        var elements = document.querySelectorAll('.gp-element');
-        var W = window.innerWidth, H = window.innerHeight;
-        for (var i = 0; i < elements.length; i++) {
-            var el  = elements[i];
-            var key = el.dataset.id;
-            var d   = data[key];
-            if (!d) continue;
-            var cx = (d.cx / 100) * W + (d.ox || 0);
-            var cy = (d.cy / 100) * H + (d.oy || 0);
-            var hw = el.offsetWidth / 2, hh = el.offsetHeight / 2;
-            el.style.left = (cx - hw) + 'px';
-            el.style.top  = (cy - hh) + 'px';
-            el.style.transform = 'scale(' + (d.s || 1) + ')';
-            el.dataset.scale = d.s || 1;
-        }
-    }
-
-    function resetLayoutToDefault() {
-        hapticUI(20);
-        currentLayoutData = JSON.parse(JSON.stringify(defaultLayouts[currentType]));
-        applyLayout(currentLayoutData);
-    }
-
-    function openSaveModal() {
-        hapticUI(15);
-        closeModals();
-        document.getElementById('layout-name-input').value = '';
-        document.getElementById('save-modal').classList.add('active');
-    }
-
-    function saveLayoutConfirm() {
-        var name = (document.getElementById('layout-name-input').value || '').trim();
-        if (!name) {
-            document.getElementById('layout-name-input').placeholder = 'Ingresa un nombre!';
-            return;
-        }
-
-        // Capture current positions
-        var elements = document.querySelectorAll('.gp-element');
-        var W = window.innerWidth, H = window.innerHeight;
-        var snapshot = {};
-        for (var i = 0; i < elements.length; i++) {
-            var el   = elements[i];
-            var rect = el.getBoundingClientRect();
-            var cx   = ((rect.left + rect.width  / 2) / W) * 100;
-            var cy   = ((rect.top  + rect.height / 2) / H) * 100;
-            snapshot[el.dataset.id] = { cx: cx, cy: cy, ox: 0, oy: 0, s: parseFloat(el.dataset.scale) || 1 };
-        }
-
-        // Save to localStorage
-        var list = JSON.parse(localStorage.getItem('gb_layouts') || '{}');
-        list[name + '_' + currentType] = { type: currentType, data: snapshot, name: name };
-        localStorage.setItem('gb_layouts', JSON.stringify(list));
-        localStorage.setItem('gb_layout_' + currentType, JSON.stringify(snapshot));
-
-        hapticUI([20, 50]);
-        closeModals();
-        setMode('test');
-    }
-
-    function openLoadModal() {
-        hapticUI(15);
-        closeModals();
-        var list = JSON.parse(localStorage.getItem('gb_layouts') || '{}');
-        var container = document.getElementById('load-list');
-        container.innerHTML = '';
-
-        var keys = Object.keys(list).filter(function(k) { return list[k].type === currentType; });
-        if (keys.length === 0) {
-            container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:16px 0;">No hay layouts guardados</div>';
-        } else {
-            for (var i = 0; i < keys.length; i++) {
-                (function(key) {
-                    var row = document.createElement('div');
-                    row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid rgba(255,255,255,0.08);';
-                    var nameEl = document.createElement('span');
-                    nameEl.textContent = list[key].name;
-                    nameEl.style.fontWeight = '600';
-                    var btns = document.createElement('div');
-                    btns.style.cssText = 'display:flex; gap:8px;';
-
-                    var btnLoad = document.createElement('button');
-                    btnLoad.textContent = 'Cargar';
-                    btnLoad.className = 'btn btn-primary';
-                    btnLoad.style.fontSize = '0.75rem';
-                    btnLoad.onclick = function() {
-                        currentLayoutData = JSON.parse(JSON.stringify(list[key].data));
-                        applyLayout(currentLayoutData);
-                        closeModals();
-                        setMode('test');
-                        hapticUI(30);
-                    };
-
-                    var btnDel = document.createElement('button');
-                    btnDel.textContent = 'X';
-                    btnDel.className = 'btn btn-danger';
-                    btnDel.style.fontSize = '0.75rem';
-                    btnDel.onclick = function() {
-                        var l2 = JSON.parse(localStorage.getItem('gb_layouts') || '{}');
-                        delete l2[key];
-                        localStorage.setItem('gb_layouts', JSON.stringify(l2));
-                        openLoadModal();
-                    };
-
-                    btns.appendChild(btnLoad);
-                    btns.appendChild(btnDel);
-                    row.appendChild(nameEl);
-                    row.appendChild(btns);
-                    container.appendChild(row);
-                })(keys[i]);
-            }
-        }
-        document.getElementById('load-modal').classList.add('active');
-    }
-
-    // ============================================================
-    // FLUJO PRINCIPAL: INICIO DE PERFIL
-    // ============================================================
-    function startSetup(type) {
-        hapticUI(30);
-        currentType = type;
-        document.body.className = 'theme-' + type;
-
-        // Update particle color for new theme
-        setTimeout(function() {
-            var v = getComputedStyle(document.body).getPropertyValue('--rgb-glow').trim();
-            if (v) currentRgbGlow = v;
-        }, 60);
-
-        // Label buttons
-        if (type !== 'racing') {
-            var labels = {
-                ps:      ['\u25b3', '\u2715', '\u25fb', '\u25ef', 'L1', 'R1', 'L2', 'R2', 'L3', 'R3'],
-                xbox:    ['Y', 'A', 'X', 'B', 'LB', 'RB', 'LT', 'RT', 'LS', 'RS'],
-                generic: ['1', '2', '3', '4', 'L', 'R', 'ZL', 'ZR', 'LC', 'RC']
-            }[type];
-            var ids = ['top','bot','left','right','l1','r1','l2','r2','l3','r3'];
-            for (var i = 0; i < ids.length; i++) {
-                var el = document.getElementById('lbl-' + ids[i]);
-                if (el) el.textContent = labels[i];
-            }
-        }
-
-        // Show/hide racing vs standard elements
-        var stdEls   = document.querySelectorAll('.standard-el');
-        var raceEls  = document.querySelectorAll('.racing-el');
-        for (var s = 0; s < stdEls.length; s++)  stdEls[s].style.display  = (type === 'racing') ? '' : '';
-        for (var r = 0; r < raceEls.length; r++) raceEls[r].style.display = (type === 'racing') ? '' : 'none';
-
-        // Notify native bridge
-        if (window.AndroidBridge) {
-            window.AndroidBridge.setConfig(type);
-            window.AndroidBridge.setOrientation(true); // landscape
-        }
-
-        // Load layout and go to gamepad screen
-        setMode('test');
-        loadLayout();
-        showScreen('screen-gamepad');
-    }
-
-    // ============================================================
-    // MODOS: test / edit / play
-    // ============================================================
-    function setMode(mode) {
-        hapticUI(15);
-        appState = mode;
-        document.getElementById('gamepad-area').className = 'gamepad-container state-' + mode;
-        deselectElement();
-        closeModals();
-
-        var backBtn = document.getElementById('btn-back');
-        var testCtrl = document.getElementById('test-controls');
-        var editCtrl = document.getElementById('edit-controls');
-
-        if (mode === 'test') {
-            document.getElementById('hud-title').textContent = 'Modo Prueba';
-            testCtrl.style.display = 'flex';
-            editCtrl.style.display = 'none';
-            if (backBtn) backBtn.style.display = 'flex';
-        } else if (mode === 'edit') {
-            document.getElementById('hud-title').textContent = 'Editor HUD';
-            testCtrl.style.display = 'none';
-            editCtrl.style.display = 'flex';
-            if (backBtn) backBtn.style.display = 'none';
-        } else if (mode === 'play') {
-            if (backBtn) backBtn.style.display = 'none';
-        }
-    }
-
-    function exitEditMode() { hapticUI(20); setMode('test'); }
-
-    function goBackToSelection() {
-        hapticUI(30);
-        if (window.AndroidBridge) {
-            try { window.AndroidBridge.detenerEscaneo(); } catch(e) {}
-            window.AndroidBridge.setOrientation(false); // portrait
-        }
-        currentType = 'init';
-        document.body.className = 'theme-init';
-        setMode('test');
-        showScreen('screen-selection');
-    }
-
-    // ============================================================
-    // DRAG & DROP Y ESCALA
-    // ============================================================
-    function deselectElement() {
-        if (activeElement) {
-            activeElement.classList.remove('selected');
-            activeElement = null;
-        }
-        document.getElementById('scale-panel').classList.remove('active');
-    }
-
-    (function setupDragAndScale() {
-        var elements = document.querySelectorAll('.gp-element');
-        var scalePanel = document.getElementById('scale-panel');
-        var slider     = document.getElementById('size-slider');
-        var scaleValue = document.getElementById('scale-value');
-        var gamepadArea = document.getElementById('gamepad-area');
-
-        for (var i = 0; i < elements.length; i++) {
-            (function(el) {
-                el.addEventListener('touchstart', function(e) {
-                    if (appState !== 'edit') return;
-                    e.preventDefault(); e.stopPropagation();
-                    hapticUI(15); deselectElement();
-                    activeElement = el;
-                    el.classList.add('selected');
-                    scalePanel.classList.add('active');
-                    slider.value = el.dataset.scale || 1;
-                    scaleValue.textContent = parseFloat(slider.value).toFixed(1) + 'x';
-                    var touch = e.touches[0], rect = el.getBoundingClientRect();
-                    dragOffset.x = touch.clientX - (rect.left + rect.width  / 2);
-                    dragOffset.y = touch.clientY - (rect.top  + rect.height / 2);
-                    isDragging = true;
-                }, { passive: false });
-            })(elements[i]);
-        }
-
-        document.addEventListener('touchmove', function(e) {
-            if (!isDragging || !activeElement || appState !== 'edit') return;
-            e.preventDefault();
-            var touch = e.touches[0];
-            activeElement.style.left = (touch.clientX - dragOffset.x - activeElement.offsetWidth  / 2) + 'px';
-            activeElement.style.top  = (touch.clientY - dragOffset.y - activeElement.offsetHeight / 2) + 'px';
-        }, { passive: false });
-
-        document.addEventListener('touchend', function() { if (isDragging) { hapticUI(10); isDragging = false; } });
-
-        slider.addEventListener('input', function(e) {
-            if (!activeElement) return;
-            var v = parseFloat(e.target.value);
-            scaleValue.textContent = v.toFixed(1) + 'x';
-            activeElement.style.transform = 'scale(' + v + ')';
-            activeElement.dataset.scale = v;
+function loadAndApplyLayout() {
+    var saved = localStorage.getItem('gb_layout_' + currentType);
+    var data  = saved ? JSON.parse(saved) : defaultLayouts[currentType];
+    if (!data) return;
+    /* Usar requestAnimationFrame para asegurar que el screen ya pintó */
+    requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+            applyLayout(data);
         });
+    });
+}
 
-        gamepadArea.addEventListener('touchstart', function(e) {
-            if (appState === 'edit' && e.target === gamepadArea) deselectElement();
-        });
-    })();
+function resetLayoutToDefault() {
+    hapticUI(18);
+    setTimeout(function() { applyLayout(defaultLayouts[currentType]); }, 50);
+}
 
-    // ============================================================
-    // FISICA ANALOG STICKS
-    // ============================================================
-    function setupAnalogStick(baseId, thumbId) {
-        var base  = document.getElementById(baseId);
-        var thumb = document.getElementById(thumbId);
-        if (!base || !thumb) return;
-        var stickActive = false, touchId = null, maxRadius = 35;
+function openSaveModal() {
+    hapticUI(14);
+    closeAllModals();
+    document.getElementById('layout-name-input').value = '';
+    document.getElementById('save-modal').classList.add('active');
+}
 
-        base.addEventListener('touchstart', function(e) {
-            if (appState === 'edit') return;
-            e.preventDefault(); e.stopPropagation(); hapticUI(15);
-            var touch = e.changedTouches[0];
-            touchId = touch.identifier; stickActive = true;
-            thumb.classList.add('active-visual');
-            updatePos(touch.clientX, touch.clientY);
-        }, { passive: false });
-
-        function updatePos(cx, cy) {
-            var rect = base.getBoundingClientRect();
-            var dx = cx - (rect.left + rect.width  / 2);
-            var dy = cy - (rect.top  + rect.height / 2);
-            var dist = Math.hypot(dx, dy);
-            if (dist > maxRadius) { dx = (dx / dist) * maxRadius; dy = (dy / dist) * maxRadius; }
-            thumb.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
-        }
-
-        document.addEventListener('touchmove', function(e) {
-            if (!stickActive) return;
-            for (var i = 0; i < e.changedTouches.length; i++) {
-                if (e.changedTouches[i].identifier === touchId) {
-                    e.preventDefault();
-                    updatePos(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
-                }
-            }
-        }, { passive: false });
-
-        document.addEventListener('touchend', function(e) {
-            for (var i = 0; i < e.changedTouches.length; i++) {
-                if (e.changedTouches[i].identifier === touchId) {
-                    stickActive = false; touchId = null;
-                    thumb.classList.remove('active-visual');
-                    thumb.style.transform = 'translate(0,0)';
-                }
-            }
-        });
+function confirmSave() {
+    var name = (document.getElementById('layout-name-input').value || '').trim();
+    if (!name) {
+        document.getElementById('layout-name-input').style.borderColor = '#ff4444';
+        return;
     }
-
-    setupAnalogStick('el-lstick', 'thumb-l');
-    setupAnalogStick('el-rstick', 'thumb-r');
-
-    // ============================================================
-    // BOTONES INTERACTIVOS (shoulders, face btns, dpad)
-    // ============================================================
-    (function setupButtons() {
-        var btns = document.querySelectorAll('.interactive-btn');
-        for (var i = 0; i < btns.length; i++) {
-            (function(btn) {
-                btn.addEventListener('touchstart', function(e) {
-                    if (appState === 'edit') return;
-                    e.stopPropagation(); hapticUI(12);
-                    btn.classList.add('active');
-                }, { passive: true });
-                btn.addEventListener('touchend',    function() { btn.classList.remove('active'); });
-                btn.addEventListener('touchcancel', function() { btn.classList.remove('active'); });
-            })(btns[i]);
-        }
-    })();
-
-    // ============================================================
-    // CONEXION BLUETOOTH: SCANNER
-    // ============================================================
-    function connectToPC() {
-        hapticUI(30);
-        closeModals();
-
-        // Update badge with current profile name
-        var names = { ps: 'PlayStation', xbox: 'Xbox', generic: 'Generico', racing: 'Carreras' };
-        var badge = document.getElementById('scan-badge');
-        if (badge) badge.textContent = names[currentType] || currentType;
-
-        // Reset scan UI
-        var comp = document.getElementById('scan-computers');
-        if (comp) comp.innerHTML = '<div class="scan-empty">Presiona Buscar para escanear...</div>';
-        var othr = document.getElementById('scan-others'); if (othr) othr.innerHTML = '';
-        var lbl  = document.getElementById('scan-others-label'); if (lbl) lbl.style.display = 'none';
-        var dot  = document.getElementById('scan-dot'); if (dot) dot.classList.remove('scanning');
-
-        showScreen('screen-connect');
+    /* Capturar posiciones actuales */
+    var els  = document.querySelectorAll('.gp-element');
+    var W = window.innerWidth, H = window.innerHeight;
+    var snap = {};
+    for (var i = 0; i < els.length; i++) {
+        var el = els[i]; var r = el.getBoundingClientRect();
+        snap[el.dataset.id] = {
+            cx: ((r.left + r.width  / 2) / W) * 100,
+            cy: ((r.top  + r.height / 2) / H) * 100,
+            s:  parseFloat(el.dataset.scale) || 1
+        };
     }
+    /* Guardar en localStorage */
+    var all = JSON.parse(localStorage.getItem('gb_layouts') || '{}');
+    var key  = name + '__' + currentType;
+    all[key] = { name: name, type: currentType, data: snap };
+    localStorage.setItem('gb_layouts', JSON.stringify(all));
+    localStorage.setItem('gb_layout_' + currentType, JSON.stringify(snap));
+    hapticUI([20, 60]);
+    closeAllModals();
+    setMode('test');
+}
 
-    function startBluetoothScan() {
-        hapticUI(25);
-        var comp = document.getElementById('scan-computers');
-        if (comp) comp.innerHTML = '<div class="scan-empty">Escaneando...</div>';
-        var othr = document.getElementById('scan-others'); if (othr) othr.innerHTML = '';
-        var lbl  = document.getElementById('scan-others-label'); if (lbl) lbl.style.display = 'none';
-        var dot  = document.getElementById('scan-dot'); if (dot) dot.classList.add('scanning');
-        var sub  = document.getElementById('scan-subtitle'); if (sub) sub.textContent = 'Buscando dispositivos...';
-
-        if (window.AndroidBridge && window.AndroidBridge.iniciarEscaneo) {
-            window.AndroidBridge.iniciarEscaneo();
-        } else {
-            // Fallback en navegador
-            setTimeout(function() {
-                var d = document.getElementById('scan-dot'); if (d) d.classList.remove('scanning');
-                var c = document.getElementById('scan-computers');
-                if (c) c.innerHTML = '<div class="scan-empty" style="color:#ff7070">Bluetooth nativo no disponible en navegador</div>';
-            }, 2000);
-        }
-    }
-
-    function connectDevice(address, name) {
-        hapticUI(20);
-        if (window.AndroidBridge && window.AndroidBridge.conectarDispositivo) {
-            window.AndroidBridge.conectarDispositivo(address);
-        } else {
-            // show connecting screen as demo
-            window.onDeviceConnecting(name);
-        }
-    }
-
-    // --- Callbacks desde el nativo (HidManager -> evaluateJavascript) ---
-
-    window.onDeviceFound = function(name, address, isComputer) {
-        if (isComputer) {
-            var el = document.getElementById('scan-computers');
-            if (el && el.querySelector('.scan-empty')) el.innerHTML = '';
-            if (el) {
+function openLoadModal() {
+    hapticUI(14);
+    closeAllModals();
+    var all = JSON.parse(localStorage.getItem('gb_layouts') || '{}');
+    var keys = Object.keys(all).filter(function(k) { return all[k].type === currentType; });
+    var list = document.getElementById('load-list');
+    if (keys.length === 0) {
+        list.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:12px 0;">No hay layouts guardados</div>';
+    } else {
+        list.innerHTML = '';
+        for (var i = 0; i < keys.length; i++) {
+            (function(key) {
                 var row = document.createElement('div');
-                row.className = 'device-row is-pc';
-                row.setAttribute('onclick', "connectDevice('" + address + "','" + name + "')");
-                row.innerHTML =
-                    '<div class="device-ico">&#128421;</div>' +
-                    '<div class="device-info-col"><div class="device-name">' + name + '</div><div class="device-mac">' + address + '</div></div>' +
-                    '<div class="device-pc-badge">PC</div>';
-                el.appendChild(row);
-            }
-        } else {
-            var lbl = document.getElementById('scan-others-label'); if (lbl) lbl.style.display = 'block';
-            var el2 = document.getElementById('scan-others');
-            if (el2) {
-                var row2 = document.createElement('div');
-                row2.className = 'device-row';
-                row2.setAttribute('onclick', "connectDevice('" + address + "','" + name + "')");
-                row2.innerHTML =
-                    '<div class="device-ico">&#128241;</div>' +
-                    '<div class="device-info-col"><div class="device-name">' + name + '</div><div class="device-mac">' + address + '</div></div>';
-                el2.appendChild(row2);
-            }
+                row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(255,255,255,0.04);border-radius:9px;border:1px solid rgba(255,255,255,0.08);margin-bottom:8px;';
+                var nm = document.createElement('span');
+                nm.textContent = all[key].name;
+                nm.style.fontWeight = '600';
+                var btns = document.createElement('div');
+                btns.style.cssText = 'display:flex;gap:7px;';
+                var bLoad = document.createElement('button');
+                bLoad.textContent = 'Cargar'; bLoad.className = 'btn btn-primary';
+                bLoad.style.fontSize = '0.75rem'; bLoad.style.padding = '5px 10px';
+                bLoad.onclick = function() {
+                    applyLayout(all[key].data);
+                    closeAllModals(); setMode('test'); hapticUI(28);
+                };
+                var bDel = document.createElement('button');
+                bDel.textContent = 'X'; bDel.className = 'btn btn-danger';
+                bDel.style.fontSize = '0.75rem'; bDel.style.padding = '5px 10px';
+                bDel.onclick = function() {
+                    var a = JSON.parse(localStorage.getItem('gb_layouts') || '{}');
+                    delete a[key]; localStorage.setItem('gb_layouts', JSON.stringify(a));
+                    openLoadModal();
+                };
+                btns.appendChild(bLoad); btns.appendChild(bDel);
+                row.appendChild(nm); row.appendChild(btns);
+                list.appendChild(row);
+            })(keys[i]);
         }
-    };
+    }
+    document.getElementById('load-modal').classList.add('active');
+}
 
-    window.onBluetoothScanFinished = function() {
-        var dot = document.getElementById('scan-dot'); if (dot) dot.classList.remove('scanning');
-        var sub = document.getElementById('scan-subtitle');
-        if (sub) sub.textContent = 'Escaneo completo. Toca un PC para conectar.';
-        var comp = document.getElementById('scan-computers');
-        if (comp && !comp.querySelector('.device-row')) {
-            comp.innerHTML = '<div class="scan-empty">No se encontraron computadoras.<br>Asegurate de que el PC tenga Bluetooth activo.</div>';
+/* ================================================================
+   FLUJO PRINCIPAL: SELECCION DE PERFIL
+================================================================ */
+function startSetup(type) {
+    hapticUI(30);
+    currentType = type;
+    document.body.className = 'theme-' + type;
+    setTimeout(function() {
+        var v = getComputedStyle(document.body).getPropertyValue('--rgb-glow').trim();
+        if (v) currentRgbGlow = v;
+    }, 60);
+
+    /* Etiquetas de botones segun perfil */
+    if (type !== 'racing') {
+        var labels = {
+            ps:      ['\u25b3','\u00d7','\u25a1','\u25cb','L1','R1','L2','R2','L3','R3'],
+            xbox:    ['Y','A','X','B','LB','RB','LT','RT','LS','RS'],
+            generic: ['1','2','3','4','L','R','ZL','ZR','LC','RC']
+        }[type];
+        var ids = ['top','bot','left','right','l1','r1','l2','r2','l3','r3'];
+        for (var i = 0; i < ids.length; i++) {
+            var lbl = document.getElementById('lbl-' + ids[i]);
+            if (lbl) lbl.textContent = labels[i];
         }
-    };
-
-    window.onDeviceConnecting = function(name) {
-        var t = document.getElementById('conn-title');
-        var s = document.getElementById('conn-sub');
-        if (t) t.textContent = 'Conectando a ' + name + '...';
-        if (s) s.textContent = 'Acepta el PIN de emparejamiento en tu PC';
-        showScreen('screen-connecting');
-    };
-
-    window.onDeviceConnected = function(name) {
-        hapticUI([30, 50, 30]);
-        var t = document.getElementById('conn-title');
-        var s = document.getElementById('conn-sub');
-        if (t) t.textContent = 'Conectado a ' + name + '!';
-        if (s) s.textContent = 'Iniciando modo gamepad...';
-        setTimeout(function() {
-            setMode('play');
-            showScreen('screen-gamepad');
-            startNativeGamepadLoop();
-        }, 1200);
-    };
-
-    window.onDeviceDisconnected = function() {
-        if (appState === 'play') { setMode('test'); showScreen('screen-gamepad'); }
-    };
-
-    window.onHidRegistered = function() { /* HID profile listo */ };
-
-    window.onBluetoothError = function(code) {
-        var dot = document.getElementById('scan-dot'); if (dot) dot.classList.remove('scanning');
-        var sub = document.getElementById('scan-subtitle');
-        if (sub) sub.textContent = (code === 'BT_DISABLED') ? 'Activa el Bluetooth y reintenta' : 'Error de conexion: ' + code;
-    };
-
-    // ============================================================
-    // GAMEPAD LOOP (envio de reportes HID al nativo)
-    // ============================================================
-    function startNativeGamepadLoop() {
-        if (!window.AndroidBridge || !window.AndroidBridge.enviarReporte) return;
-        setInterval(function() {
-            if (appState !== 'play') return;
-            var buttons = 0;
-            var lx = 128, ly = 128, rx = 128, ry = 128;
-            if (document.querySelector('.act-bottom.active')) buttons |= (1 << 0); // A
-            if (document.querySelector('.act-right.active'))  buttons |= (1 << 1); // B
-            if (document.querySelector('.act-left.active'))   buttons |= (1 << 2); // X
-            if (document.querySelector('.act-top.active'))    buttons |= (1 << 3); // Y
-            if (document.querySelector('.d-up.active'))       buttons |= (1 << 4);
-            if (document.querySelector('.d-down.active'))     buttons |= (1 << 5);
-            if (document.querySelector('.d-left.active'))     buttons |= (1 << 6);
-            if (document.querySelector('.d-right.active'))    buttons |= (1 << 7);
-            window.AndroidBridge.enviarReporte(buttons, lx, ly, rx, ry);
-        }, 16); // ~60Hz
     }
 
-    </script>
+    /* Mostrar/ocultar racing elements */
+    var stdEls  = document.querySelectorAll('.standard-el');
+    var raceEls = document.querySelectorAll('.racing-el');
+    for (var s = 0; s < stdEls.length;  s++) stdEls[s].style.display  = '';
+    for (var r = 0; r < raceEls.length; r++) raceEls[r].style.display = (type === 'racing') ? '' : 'none';
+
+    /* Notificar al nativo: perfil + orientacion landscape */
+    if (window.AndroidBridge) {
+        window.AndroidBridge.setConfig(type);
+        window.AndroidBridge.setOrientation(true);
+    }
+
+    /* Ir al gamepad y cargar layout DESPUES del paint */
+    setMode('test');
+    showScreen('screen-gamepad');
+    loadAndApplyLayout();
+}
+
+/* ================================================================
+   MODOS: test / edit / play
+================================================================ */
+function setMode(mode) {
+    hapticUI(14);
+    appState = mode;
+    document.getElementById('gamepad-area').className = 'gamepad-container state-' + mode;
+    deselectEl();
+    closeAllModals();
+    var backBtn  = document.getElementById('btn-back');
+    var testCtrl = document.getElementById('test-controls');
+    var editCtrl = document.getElementById('edit-controls');
+    if (mode === 'test') {
+        document.getElementById('hud-title').textContent = 'Modo Prueba';
+        testCtrl.style.display = 'flex'; editCtrl.style.display = 'none';
+        if (backBtn) backBtn.style.display = 'flex';
+    } else if (mode === 'edit') {
+        document.getElementById('hud-title').textContent = 'Editor HUD';
+        testCtrl.style.display = 'none'; editCtrl.style.display = 'flex';
+        if (backBtn) backBtn.style.display = 'none';
+    } else if (mode === 'play') {
+        if (backBtn) backBtn.style.display = 'none';
+    }
+}
+
+function exitEditMode() { hapticUI(18); setMode('test'); }
+
+function goBackToSelection() {
+    hapticUI(28);
+    if (window.AndroidBridge) {
+        try { window.AndroidBridge.detenerEscaneo(); } catch(e) {}
+        window.AndroidBridge.setOrientation(false);
+    }
+    currentType = 'init';
+    document.body.className = 'theme-init';
+    setMode('test');
+    showScreen('screen-selection');
+}
+
+/* ================================================================
+   DRAG & DROP
+================================================================ */
+function deselectEl() {
+    if (activeEl) { activeEl.classList.remove('selected'); activeEl = null; }
+    document.getElementById('scale-panel').classList.remove('active');
+}
+
+(function() {
+    var els = document.querySelectorAll('.gp-element');
+    for (var i = 0; i < els.length; i++) {
+        (function(el) {
+            el.addEventListener('touchstart', function(e) {
+                if (appState !== 'edit') return;
+                e.preventDefault(); e.stopPropagation(); hapticUI(14);
+                deselectEl(); activeEl = el; el.classList.add('selected');
+                document.getElementById('scale-panel').classList.add('active');
+                var sl = document.getElementById('size-slider');
+                sl.value = el.dataset.scale || 1;
+                document.getElementById('scale-value').textContent = parseFloat(sl.value).toFixed(1) + 'x';
+                var t = e.touches[0]; var r = el.getBoundingClientRect();
+                dragOfsX = t.clientX - (r.left + r.width  / 2);
+                dragOfsY = t.clientY - (r.top  + r.height / 2);
+                isDragging = true;
+            }, { passive:false });
+        })(els[i]);
+    }
+
+    document.addEventListener('touchmove', function(e) {
+        if (!isDragging || !activeEl || appState !== 'edit') return;
+        e.preventDefault();
+        var t = e.touches[0];
+        activeEl.style.left = (t.clientX - dragOfsX - activeEl.offsetWidth  / 2) + 'px';
+        activeEl.style.top  = (t.clientY - dragOfsY - activeEl.offsetHeight / 2) + 'px';
+    }, { passive:false });
+
+    document.addEventListener('touchend', function() { if (isDragging) { hapticUI(8); isDragging = false; } });
+
+    document.getElementById('gamepad-area').addEventListener('touchstart', function(e) {
+        if (appState === 'edit' && e.target === this) deselectEl();
+    });
+
+    document.getElementById('size-slider').addEventListener('input', function() {
+        if (!activeEl) return;
+        var v = parseFloat(this.value);
+        document.getElementById('scale-value').textContent = v.toFixed(1) + 'x';
+        activeEl.style.transform = 'scale(' + v + ')';
+        activeEl.dataset.scale = v;
+    });
+})();
+
+/* ================================================================
+   ANALOG STICKS
+================================================================ */
+function makeStick(elId, thumbId) {
+    var base = document.getElementById(elId);
+    var thumb = document.getElementById(thumbId);
+    if (!base || !thumb) return;
+    var active = false, tid = null, MAX = 36;
+    base.addEventListener('touchstart', function(e) {
+        if (appState === 'edit') return;
+        e.preventDefault(); e.stopPropagation(); hapticUI(14);
+        tid = e.changedTouches[0].identifier; active = true;
+        thumb.classList.add('pressed'); move(e.changedTouches[0]);
+    }, { passive:false });
+    function move(t) {
+        var r = base.getBoundingClientRect();
+        var dx = t.clientX - (r.left + r.width  / 2);
+        var dy = t.clientY - (r.top  + r.height / 2);
+        var d  = Math.hypot(dx, dy);
+        if (d > MAX) { dx = dx/d*MAX; dy = dy/d*MAX; }
+        thumb.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    }
+    document.addEventListener('touchmove', function(e) {
+        if (!active) return;
+        for (var i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === tid) { e.preventDefault(); move(e.changedTouches[i]); }
+        }
+    }, { passive:false });
+    document.addEventListener('touchend', function(e) {
+        for (var i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === tid) {
+                active = false; tid = null;
+                thumb.classList.remove('pressed');
+                thumb.style.transform = 'translate(0,0)';
+            }
+        }
+    });
+}
+makeStick('el-lstick', 'thumb-l');
+makeStick('el-rstick', 'thumb-r');
+
+/* ================================================================
+   BOTONES INTERACTIVOS (shoulders, dpad, face)
+================================================================ */
+(function() {
+    var btns = document.querySelectorAll('.interactive-btn');
+    for (var i = 0; i < btns.length; i++) {
+        (function(btn) {
+            btn.addEventListener('touchstart', function(e) {
+                if (appState === 'edit') return;
+                e.stopPropagation(); hapticUI(11);
+                btn.classList.add('active');
+            }, { passive:true });
+            btn.addEventListener('touchend',    function() { btn.classList.remove('active'); });
+            btn.addEventListener('touchcancel', function() { btn.classList.remove('active'); });
+        })(btns[i]);
+    }
+})();
+
+/* ================================================================
+   BLUETOOTH SCANNER
+================================================================ */
+function connectToPC() {
+    hapticUI(28);
+    closeAllModals();
+    var names = { ps:'PlayStation', xbox:'Xbox', generic:'Generico', racing:'Carreras' };
+    document.getElementById('scan-badge').textContent = names[currentType] || currentType;
+    document.getElementById('scan-computers').innerHTML = '<div class="scan-empty">Presiona "Buscar" para escanear...</div>';
+    document.getElementById('scan-others').innerHTML    = '';
+    document.getElementById('scan-others-lbl').style.display = 'none';
+    document.getElementById('scan-dot').classList.remove('on');
+    document.getElementById('scan-subtitle').textContent = 'Presiona Buscar para iniciar el escaneo';
+    showScreen('screen-connect');
+}
+
+function startBluetoothScan() {
+    hapticUI(22);
+    document.getElementById('scan-computers').innerHTML = '<div class="scan-empty">Escaneando...</div>';
+    document.getElementById('scan-others').innerHTML    = '';
+    document.getElementById('scan-others-lbl').style.display = 'none';
+    document.getElementById('scan-dot').classList.add('on');
+    document.getElementById('scan-subtitle').textContent = 'Buscando dispositivos Bluetooth...';
+    if (window.AndroidBridge && window.AndroidBridge.iniciarEscaneo) {
+        window.AndroidBridge.iniciarEscaneo();
+    } else {
+        setTimeout(function() {
+            document.getElementById('scan-dot').classList.remove('on');
+            document.getElementById('scan-computers').innerHTML =
+                '<div class="scan-empty" style="color:#ff7070;">Bluetooth nativo no disponible en navegador web</div>';
+        }, 2000);
+    }
+}
+
+function connectDevice(address, name) {
+    hapticUI(18);
+    if (window.AndroidBridge && window.AndroidBridge.conectarDispositivo) {
+        window.AndroidBridge.conectarDispositivo(address);
+    } else {
+        window.onDeviceConnecting(name);
+    }
+}
+
+/* --- Callbacks desde HidManager (evaluateJavascript) --- */
+
+window.onDeviceFound = function(name, address, isComputer) {
+    if (isComputer) {
+        var c = document.getElementById('scan-computers');
+        if (c && c.querySelector('.scan-empty')) c.innerHTML = '';
+        if (c) {
+            var r = document.createElement('div'); r.className = 'device-row is-pc';
+            r.onclick = function() { connectDevice(address, name); };
+            r.innerHTML = '<div class="device-ico">&#128421;</div>' +
+                '<div class="device-info-col"><div class="device-name">' + name + '</div>' +
+                '<div class="device-mac">' + address + '</div></div>' +
+                '<div class="device-pc-badge">PC</div>';
+            c.appendChild(r);
+        }
+    } else {
+        document.getElementById('scan-others-lbl').style.display = 'block';
+        var o = document.getElementById('scan-others');
+        if (o) {
+            var r2 = document.createElement('div'); r2.className = 'device-row';
+            r2.onclick = function() { connectDevice(address, name); };
+            r2.innerHTML = '<div class="device-ico">&#128241;</div>' +
+                '<div class="device-info-col"><div class="device-name">' + name + '</div>' +
+                '<div class="device-mac">' + address + '</div></div>';
+            o.appendChild(r2);
+        }
+    }
+};
+
+window.onBluetoothScanFinished = function() {
+    document.getElementById('scan-dot').classList.remove('on');
+    document.getElementById('scan-subtitle').textContent = 'Escaneo completo — toca un PC para conectar';
+    var c = document.getElementById('scan-computers');
+    if (c && !c.querySelector('.device-row'))
+        c.innerHTML = '<div class="scan-empty">No se encontraron PCs. Asegurate de que tu PC tenga Bluetooth activo y sea visible.</div>';
+};
+
+window.onDeviceConnecting = function(name) {
+    var deviceNames = { ps:'Wireless Controller', xbox:'Xbox Wireless Controller', generic:'GameBridge Controller', racing:'GameBridge Wheel' };
+    var hidName = deviceNames[currentType] || 'GameBridge Controller';
+    document.getElementById('conn-title').textContent  = 'Conectando a ' + name + '...';
+    document.getElementById('conn-sub').textContent    = 'Buscando emparejamiento Bluetooth...';
+    document.getElementById('pair-device-name').textContent = hidName;
+    document.getElementById('pair-info').style.display = 'block';
+    showScreen('screen-connecting');
+};
+
+window.onDeviceConnected = function(name) {
+    hapticUI([30, 60, 30]);
+    document.getElementById('pair-info').style.display = 'none';
+    document.getElementById('conn-title').textContent  = '&#10003; Conectado a ' + name;
+    document.getElementById('conn-sub').textContent    = 'Iniciando modo gamepad...';
+    setTimeout(function() {
+        setMode('play'); showScreen('screen-gamepad'); startHidLoop();
+    }, 1000);
+};
+
+window.onDeviceDisconnected = function() {
+    if (appState === 'play') { setMode('test'); showScreen('screen-gamepad'); }
+};
+
+window.onHidRegistered = function() {};
+
+window.onBluetoothError = function(code) {
+    document.getElementById('scan-dot').classList.remove('on');
+    var msg = code === 'BT_DISABLED'
+        ? 'El Bluetooth esta apagado. Activalo e intenta de nuevo.'
+        : 'Error de conexion: ' + code;
+    document.getElementById('scan-subtitle').textContent = msg;
+};
+
+/* ================================================================
+   HID REPORT LOOP (envio de inputs al nativo a 60Hz)
+================================================================ */
+function startHidLoop() {
+    if (!window.AndroidBridge || !window.AndroidBridge.enviarReporte) return;
+    setInterval(function() {
+        if (appState !== 'play') return;
+        var b = 0, lx=128, ly=128, rx=128, ry=128;
+        if (document.querySelector('.act-bottom.active')) b |= (1<<0);
+        if (document.querySelector('.act-right.active'))  b |= (1<<1);
+        if (document.querySelector('.act-left.active'))   b |= (1<<2);
+        if (document.querySelector('.act-top.active'))    b |= (1<<3);
+        if (document.querySelector('.d-up.active'))       b |= (1<<4);
+        if (document.querySelector('.d-down.active'))     b |= (1<<5);
+        if (document.querySelector('.d-left.active'))     b |= (1<<6);
+        if (document.querySelector('.d-right.active'))    b |= (1<<7);
+        window.AndroidBridge.enviarReporte(b, lx, ly, rx, ry);
+    }, 16);
+}
+</script>
 </body>
 </html>
