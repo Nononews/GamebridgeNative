@@ -647,53 +647,47 @@
 </div>
 
 <!-- ================================================================
-     PANTALLA 3: EMPAREJAMIENTO (MODO PERIFERICO HID)
+     PANTALLA 3: EMPAREJAMIENTO WI-FI (GAMEBRIDGE SERVER)
 ================================================================ -->
 <div id="screen-connect" class="screen">
     <div class="scan-header">
         <button class="scan-back-btn" onclick="goBackToSelection()">&#8592;</button>
         <div class="scan-header-info">
-            <h2 id="pair-header-title">Modo Emparejamiento</h2>
-            <p id="scan-subtitle">El dispositivo se anuncia como controlador</p>
+            <h2 id="pair-header-title">Conectar al PC</h2>
+            <p id="scan-subtitle">Emparejamiento ultra-rpido por Wi-Fi</p>
         </div>
         <div class="scan-dot" id="scan-dot"></div>
     </div>
 
-    <!-- MODO PERIFERICO: Anunciarse como gamepad -->
+    <!-- WIFI CONNECTION UI -->
     <div id="pair-peripheral-panel" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:20px;padding:24px 24px 60px;text-align:center;overflow-y:auto;">
-
-        <!-- Animacion tipo "controlador buscando" -->
+        
         <div id="pair-pulse-ring" style="position:relative;width:110px;height:110px;">
             <div style="position:absolute;inset:0;border-radius:50%;border:2px solid rgba(var(--rgb-glow),0.15);animation:ripple 2s ease infinite;"></div>
             <div style="position:absolute;inset:10px;border-radius:50%;border:2px solid rgba(var(--rgb-glow),0.25);animation:ripple 2s ease 0.5s infinite;"></div>
             <div style="position:absolute;inset:20px;border-radius:50%;border:2px solid rgba(var(--rgb-glow),0.4);animation:ripple 2s ease 1s infinite;"></div>
-            <div id="pair-center-ico" style="position:absolute;inset:30px;border-radius:50%;background:rgba(var(--rgb-glow),0.15);border:2px solid var(--theme-glow);display:flex;align-items:center;justify-content:center;font-size:1.6rem;">&#127918;</div>
+            <div id="pair-center-ico" style="position:absolute;inset:30px;border-radius:50%;background:rgba(var(--rgb-glow),0.15);border:2px solid var(--theme-glow);display:flex;align-items:center;justify-content:center;font-size:1.6rem;">&#128187;</div>
         </div>
 
-        <h3 id="pair-mode-name" style="font-size:1.1rem;font-weight:700;color:var(--theme-accent);">Xbox Wireless Controller</h3>
+        <h3 id="pair-mode-name" style="font-size:1.1rem;font-weight:700;color:var(--theme-accent);">GameBridge PC Server</h3>
         <p style="color:var(--text-muted);font-size:0.83rem;max-width:260px;line-height:1.6;">
-            El tel&eacute;fono se anuncia como este controlador.<br>
-            Busca <b id="pair-mode-name2" style="color:var(--theme-accent);">Xbox Wireless Controller</b> en el Bluetooth de tu PC.
+            Abre el Servidor en tu PC y escribe la Direcci&oacute;n IP aqui abajo para conectarte sin latencia.<br>
         </p>
 
-        <!-- Pasos en PC -->
-        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:14px;padding:14px 18px;max-width:280px;text-align:left;font-size:0.81rem;line-height:1.8;color:var(--text-muted);">
-            <div style="color:var(--theme-accent);font-weight:700;font-size:0.75rem;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">&#128187; Pasos en Windows</div>
-            <div>&#49;&#65038; Ajustes &rarr; Bluetooth &amp; dispositivos</div>
-            <div>&#50;&#65038; Clic en <b>&#34;Agregar dispositivo&#34;</b></div>
-            <div>&#51;&#65038; Selecciona Bluetooth</div>
-            <div>&#52;&#65038; Busca y haz clic en <b id="pair-mode-name3" style="color:white;">Xbox Wireless Controller</b></div>
-            <div>&#53;&#65038; Confirma el emparejamiento si lo pide</div>
+        <!-- Input IP -->
+        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:14px;padding:18px;width:100%;max-width:280px;text-align:center;">
+            <div style="color:var(--theme-accent);font-weight:700;font-size:0.75rem;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">DIRECCION IP DEL PC</div>
+            <input type="text" id="pc-ip-input" placeholder="ej: 192.168.1.5" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:8px;padding:12px;color:white;font-size:1.1rem;text-align:center;font-family:monospace;outline:none;">
+            <div id="ip-error-msg" style="color:#ff4444;font-size:0.75rem;margin-top:8px;display:none;">Por favor ingresa una IP v&aacute;lida</div>
         </div>
 
-        <div id="pair-status-msg" style="font-size:0.82rem;color:var(--text-muted);">Visible para otros dispositivos...</div>
+        <div id="pair-status-msg" style="font-size:0.82rem;color:var(--text-muted);">Listo para conectar...</div>
 
         <!-- Botones -->
         <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
-            <button class="btn btn-primary" id="pair-start-btn" onclick="startPeripheralMode()" style="font-size:0.84rem;">&#128268; Activar Modo Par</button>
-            <button class="btn btn-outline" onclick="showReconnectScanner()" style="font-size:0.84rem;">Reconectar a PC conocida</button>
+            <button class="btn btn-primary" id="pair-start-btn" onclick="startWifiConnection()" style="font-size:0.9rem;padding:10px 24px;">&#128268; Conectar Wi-Fi</button>
         </div>
-        <button class="btn btn-outline" onclick="goBackToSelection()" style="font-size:0.81rem;opacity:0.7;">Cancelar</button>
+        <button class="btn btn-outline" onclick="goBackToSelection()" style="font-size:0.81rem;opacity:0.7;margin-top:8px;">Cancelar</button>
     </div>
 
     <!-- RECONECTAR: Lista de dispositivos (oculta por defecto) -->
@@ -1492,23 +1486,77 @@ window.onBluetoothError = function(code) {
 };
 
 /* ================================================================
-   HID REPORT LOOP (envio de inputs al nativo a 60Hz)
+   UDP NETWORK LOOP (envio de inputs al Server a 60Hz)
 ================================================================ */
-function startHidLoop() {
-    if (!window.AndroidBridge || !window.AndroidBridge.enviarReporte) return;
+function startControllerLoop() {
+    if (!window.AndroidBridge || !window.AndroidBridge.enviarEstadoRedLocal) return;
+    
+    // Solo enviar si cambio algo
+    var lastJson = '';
+
     setInterval(function() {
         if (appState !== 'play') return;
-        var b = 0, lx=128, ly=128, rx=128, ry=128;
-        if (document.querySelector('.act-bottom.active')) b |= (1<<0);
-        if (document.querySelector('.act-right.active'))  b |= (1<<1);
-        if (document.querySelector('.act-left.active'))   b |= (1<<2);
-        if (document.querySelector('.act-top.active'))    b |= (1<<3);
-        if (document.querySelector('.d-up.active'))       b |= (1<<4);
-        if (document.querySelector('.d-down.active'))     b |= (1<<5);
-        if (document.querySelector('.d-left.active'))     b |= (1<<6);
-        if (document.querySelector('.d-right.active'))    b |= (1<<7);
-        window.AndroidBridge.enviarReporte(b, lx, ly, rx, ry);
-    }, 16);
+        
+        var payload = {
+            btn_a: document.querySelector('.act-bottom.active') ? 1 : 0,
+            btn_b: document.querySelector('.act-right.active') ? 1 : 0,
+            btn_x: document.querySelector('.act-left.active') ? 1 : 0,
+            btn_y: document.querySelector('.act-top.active') ? 1 : 0,
+            
+            btn_l1: document.querySelector('#lbl-l1.active') ? 1 : 0,
+            btn_r1: document.querySelector('#lbl-r1.active') ? 1 : 0,
+            btn_l3: document.querySelector('#lbl-l3.active') ? 1 : 0,
+            btn_r3: document.querySelector('#lbl-r3.active') ? 1 : 0,
+            
+            dpad: 0,
+            lt: 0.0,
+            rt: 0.0,
+            ls_x: 0.0,
+            ls_y: 0.0,
+            rs_x: 0.0,
+            rs_y: 0.0
+        };
+
+        // D-Pad mapping (1=U, 2=UR, 3=R, 4=DR, 5=D, 6=DL, 7=L, 8=UL)
+        var dU = document.querySelector('.d-up.active');
+        var dD = document.querySelector('.d-down.active');
+        var dL = document.querySelector('.d-left.active');
+        var dR = document.querySelector('.d-right.active');
+        
+        if (dU && dR) payload.dpad = 2;
+        else if (dD && dR) payload.dpad = 4;
+        else if (dD && dL) payload.dpad = 6;
+        else if (dU && dL) payload.dpad = 8;
+        else if (dU) payload.dpad = 1;
+        else if (dR) payload.dpad = 3;
+        else if (dD) payload.dpad = 5;
+        else if (dL) payload.dpad = 7;
+
+        // Triggers analog L2 / R2 (0.0 to 1.0)
+        if (document.querySelector('#lbl-l2.active') || document.querySelector('#el-brake .active')) payload.lt = 1.0;
+        if (document.querySelector('#lbl-r2.active') || document.querySelector('#el-gas .active')) payload.rt = 1.0;
+
+        // Racing extras mappings to analog or face buttons as needed
+        if (document.querySelector('#el-steer-left .active')) payload.ls_x = -1.0;
+        if (document.querySelector('#el-steer-right .active')) payload.ls_x = 1.0;
+        if (document.querySelector('#el-gear-up .active')) payload.btn_y = 1;
+        if (document.querySelector('#el-gear-down .active')) payload.btn_a = 1;
+        if (document.querySelector('#el-handbrake .active')) payload.btn_b = 1;
+        if (document.querySelector('#el-nitrous .active')) payload.btn_x = 1;
+        if (document.querySelector('#el-cam .active')) payload.btn_r1 = 1;
+        
+        // Sticks parsing (thumb-l, thumb-r positions convert to -1.0 to 1.0)
+        var thumbL = document.getElementById('thumb-l');
+        if (thumbL && thumbL.classList.contains('pressed')) {
+            // we'd need exact px parsing here, for now it's raw
+        }
+        
+        var currentJson = JSON.stringify(payload);
+        if (currentJson !== lastJson) {
+            window.AndroidBridge.enviarEstadoRedLocal(currentJson);
+            lastJson = currentJson;
+        }
+    }, 16); // 60Hz = 16.6ms
 }
 </script>
 </body>

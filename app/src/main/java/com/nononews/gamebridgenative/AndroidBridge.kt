@@ -62,6 +62,29 @@ class AndroidBridge(private val activity: MainActivity, private val hidManager: 
         hidManager.connectToDevice(address)
     }
 
+    private val udpManager = UdpManager()
+
+    /** Connect to PC Server via UDP Wi-Fi */
+    @JavascriptInterface
+    fun conectarRedLocal(ip: String) {
+        udpManager.connect(ip) { success, errorMsg ->
+            activity.runOnUiThread {
+                if (success) {
+                    activity.webView.evaluateJavascript("window.onNetworkConnected && window.onNetworkConnected('$ip')", null)
+                } else {
+                    val safeError = errorMsg?.replace("'", "") ?: "Unknown error"
+                    activity.webView.evaluateJavascript("window.onNetworkError && window.onNetworkError('$safeError')", null)
+                }
+            }
+        }
+    }
+
+    /** Send JSON state to PC Server via UDP for Wi-Fi Mode */
+    @JavascriptInterface
+    fun enviarEstadoRedLocal(jsonPayload: String) {
+        udpManager.sendPayload(jsonPayload)
+    }
+
     /** Send gamepad report: 16-bit buttons + 4 analog axes (0-255) */
     @JavascriptInterface
     fun enviarReporte(buttons: Int, leftX: Int, leftY: Int, rightX: Int, rightY: Int) {
