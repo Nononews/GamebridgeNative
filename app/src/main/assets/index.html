@@ -651,7 +651,7 @@
      PANTALLA 4: CONECTANDO
 ================================================================ -->
 <div id="screen-connecting" class="screen">
-    <div class="spinner"></div>
+    <div class="spinner" id="conn-spinner"></div>
     <h2 id="conn-title" style="font-size:1.15rem;font-weight:700;">Conectando...</h2>
     <p id="conn-sub" style="color:var(--text-muted);font-size:0.85rem;max-width:280px;">Espera...</p>
 
@@ -665,7 +665,18 @@
         </ol>
     </div>
 
-    <button class="btn btn-outline" onclick="goBackToSelection()" style="margin-top:8px;">Cancelar</button>
+    <!-- Error / Timeout box -->
+    <div id="conn-error-box" style="display:none;flex-direction:column;align-items:center;gap:12px;margin-top:8px;">
+        <div style="background:rgba(255,50,50,0.1);border:1px solid rgba(255,80,80,0.3);border-radius:12px;padding:14px 20px;color:#ff8080;font-size:0.84rem;text-align:center;max-width:280px;">
+            &#9888; Tiempo de conexion agotado.<br>Verifica que el PC tenga Bluetooth activo y sea visible.
+        </div>
+        <div style="display:flex;gap:12px;">
+            <button class="btn btn-primary" onclick="retryConnect()" style="font-size:0.85rem;">&#8635; Reintentar</button>
+            <button class="btn btn-outline" onclick="goBackToSelection()" style="font-size:0.85rem;">Cancelar</button>
+        </div>
+    </div>
+
+    <button class="btn btn-outline" id="conn-cancel-btn" onclick="goBackToSelection()" style="margin-top:8px;">Cancelar</button>
 </div>
 
 <!-- ================================================================
@@ -836,12 +847,19 @@ function loadAndApplyLayout() {
     var saved = localStorage.getItem('gb_layout_' + currentType);
     var data  = saved ? JSON.parse(saved) : defaultLayouts[currentType];
     if (!data) return;
-    /* Usar requestAnimationFrame para asegurar que el screen ya pintó */
-    requestAnimationFrame(function() {
-        requestAnimationFrame(function() {
-            applyLayout(data);
-        });
-    });
+
+    /* Si la orientacion está cambiando, esperar el evento resize antes de
+       calcular posiciones (innerWidth/Height cambian TRAS la rotacion) */
+    var applied = false;
+    function doApply() {
+        if (applied) return;
+        applied = true;
+        window.removeEventListener('resize', doApply);
+        applyLayout(data);
+    }
+    window.addEventListener('resize', doApply);
+    // Fallback: si no hay resize en 700ms (ya estaba en landscape), aplicar igual
+    setTimeout(doApply, 700);
 }
 
 function resetLayoutToDefault() {
@@ -954,11 +972,23 @@ function startSetup(type) {
         }
     }
 
-    /* Mostrar/ocultar racing elements */
-    var stdEls  = document.querySelectorAll('.standard-el');
-    var raceEls = document.querySelectorAll('.racing-el');
-    for (var s = 0; s < stdEls.length;  s++) stdEls[s].style.display  = '';
-    for (var r = 0; r < raceEls.length; r++) raceEls[r].style.display = (type === 'racing') ? '' : 'none';
+    /* ----- Mostrar/ocultar elementos segun perfil ----- */
+    var allStd  = document.querySelectorAll('.standard-el');
+    var allRace = document.querySelectorAll('.racing-el');
+
+    if (type === 'racing') {
+        // Para Carreras: ocultar face buttons y dpad; mantener hombros y sticks
+        var raceHide = ['el-btn-top','el-btn-bot','el-btn-left','el-btn-right','el-dpad','el-l3','el-r3'];
+        for (var s = 0; s < allStd.length; s++) {
+            var elId = allStd[s].id;
+            allStd[s].style.display = (raceHide.indexOf(elId) !== -1) ? 'none' : '';
+        }
+        for (var r = 0; r < allRace.length; r++) allRace[r].style.display = '';
+    } else {
+        // Para otros: mostrar todos estandar, ocultar racing
+        for (var s2 = 0; s2 < allStd.length;  s2++) allStd[s2].style.display  = '';
+        for (var r2 = 0; r2 < allRace.length; r2++) allRace[r2].style.display = 'none';
+    }
 
     /* Notificar al nativo: perfil + orientacion landscape */
     if (window.AndroidBridge) {
@@ -966,7 +996,7 @@ function startSetup(type) {
         window.AndroidBridge.setOrientation(true);
     }
 
-    /* Ir al gamepad y cargar layout DESPUES del paint */
+    /* Ir al gamepad y cargar layout — espera resize tras rotacion */
     setMode('test');
     showScreen('screen-gamepad');
     loadAndApplyLayout();
@@ -1157,6 +1187,12 @@ function startBluetoothScan() {
 
 function connectDevice(address, name) {
     hapticUI(18);
+    lastConnectedAddress = address;
+    lastConnectedName    = name;
+    /* Restablecer spinner */
+    var spinner = document.getElementById('conn-spinner');
+    if (spinner) spinner.style.display = 'block';
+    /* Llamada nativa */
     if (window.AndroidBridge && window.AndroidBridge.conectarDispositivo) {
         window.AndroidBridge.conectarDispositivo(address);
     } else {
@@ -1201,38 +1237,118 @@ window.onBluetoothScanFinished = function() {
         c.innerHTML = '<div class="scan-empty">No se encontraron PCs. Asegurate de que tu PC tenga Bluetooth activo y sea visible.</div>';
 };
 
+var connTimeoutId = null;
+
 window.onDeviceConnecting = function(name) {
+    // Cancel any previous timeout
+    if (connTimeoutId) { clearTimeout(connTimeoutId); connTimeoutId = null; }
+
     var deviceNames = { ps:'Wireless Controller', xbox:'Xbox Wireless Controller', generic:'GameBridge Controller', racing:'GameBridge Wheel' };
     var hidName = deviceNames[currentType] || 'GameBridge Controller';
     document.getElementById('conn-title').textContent  = 'Conectando a ' + name + '...';
     document.getElementById('conn-sub').textContent    = 'Buscando emparejamiento Bluetooth...';
     document.getElementById('pair-device-name').textContent = hidName;
     document.getElementById('pair-info').style.display = 'block';
+    document.getElementById('conn-error-box').style.display = 'none';
     showScreen('screen-connecting');
+
+    /* Timeout: si no responde en 25 segundos, mostrar error */
+    connTimeoutId = setTimeout(function() {
+        connTimeoutId = null;
+        document.getElementById('conn-title').textContent = 'Sin respuesta del PC';
+        document.getElementById('conn-sub').textContent   = 'El dispositivo no respondio a tiempo';
+        document.getElementById('pair-info').style.display   = 'none';
+        document.getElementById('conn-error-box').style.display = 'flex';
+        hapticUI([40, 80, 40]);
+    }, 25000);
 };
 
 window.onDeviceConnected = function(name) {
+    /* Cancelar timeout de conexion */
+    if (connTimeoutId) { clearTimeout(connTimeoutId); connTimeoutId = null; }
     hapticUI([30, 60, 30]);
-    document.getElementById('pair-info').style.display = 'none';
-    document.getElementById('conn-title').textContent  = '&#10003; Conectado a ' + name;
+    document.getElementById('pair-info').style.display      = 'none';
+    document.getElementById('conn-error-box').style.display = 'none';
+    document.getElementById('conn-title').textContent  = '\u2713 Conectado a ' + name;
     document.getElementById('conn-sub').textContent    = 'Iniciando modo gamepad...';
     setTimeout(function() {
         setMode('play'); showScreen('screen-gamepad'); startHidLoop();
-    }, 1000);
+    }, 900);
 };
 
+/* Guardar la ultima MAC intentada para retryConnect */
+var lastConnectedAddress = null;
+var lastConnectedName    = null;
+
 window.onDeviceDisconnected = function() {
-    if (appState === 'play') { setMode('test'); showScreen('screen-gamepad'); }
+    if (appState === 'play') {
+        hapticUI([50, 100, 50]);
+        setMode('test');
+        /* Mostrar notificacion de desconexion con opcion de reconectar */
+        var bar = document.getElementById('hud-status');
+        if (bar) {
+            bar.style.borderColor = '#ff4444';
+            document.getElementById('hud-title').textContent = 'Desconectado';
+        }
+        showScreen('screen-gamepad');
+        /* Auto-ofrecer reconectar tras 2s si tenemos la MAC */
+        if (lastConnectedAddress) {
+            setTimeout(function() {
+                if (appState === 'test') {
+                    var btn = document.createElement('button');
+                    btn.className = 'btn btn-primary';
+                    btn.textContent = '\u21ba Reconectar';
+                    btn.style.cssText = 'position:absolute;bottom:20px;left:50%;transform:translateX(-50%);z-index:300;';
+                    btn.id = 'reconnect-btn';
+                    btn.onclick = function() { btn.remove(); retryConnect(); };
+                    document.getElementById('screen-gamepad').appendChild(btn);
+                }
+            }, 2000);
+        }
+    }
 };
 
 window.onHidRegistered = function() {};
 
+/* Reintentar la ultima conexion */
+function retryConnect() {
+    document.getElementById('conn-error-box').style.display = 'none';
+    document.getElementById('conn-spinner').style.display   = 'block';
+    document.getElementById('conn-title').textContent = 'Reintentando...';
+    document.getElementById('conn-sub').textContent   = 'Buscando dispositivo Bluetooth...';
+    if (lastConnectedAddress && window.AndroidBridge) {
+        window.AndroidBridge.conectarDispositivo(lastConnectedAddress);
+    } else {
+        /* Si no hay MAC guardada, volver al escaner */
+        showScreen('screen-connect');
+    }
+}
+
 window.onBluetoothError = function(code) {
-    document.getElementById('scan-dot').classList.remove('on');
+    /* Cancelar timeout si hay uno pendiente */
+    if (connTimeoutId) { clearTimeout(connTimeoutId); connTimeoutId = null; }
+
+    /* Ocultar spinner, mostrar error */
+    var spinner = document.getElementById('conn-spinner');
+    if (spinner) spinner.style.display = 'none';
+
     var msg = code === 'BT_DISABLED'
         ? 'El Bluetooth esta apagado. Activalo e intenta de nuevo.'
-        : 'Error de conexion: ' + code;
-    document.getElementById('scan-subtitle').textContent = msg;
+        : (code === 'CONNECT_FAILED'
+            ? 'No se pudo conectar. Verifica que el PC este disponible.'
+            : 'Error de conexion: ' + code);
+
+    /* Si estamos en la pantalla de conectando, mostrar error ahi */
+    if (document.getElementById('screen-connecting').classList.contains('active')) {
+        document.getElementById('conn-title').textContent = 'Error de conexion';
+        document.getElementById('conn-sub').textContent   = msg;
+        document.getElementById('pair-info').style.display   = 'none';
+        document.getElementById('conn-error-box').style.display = 'flex';
+        hapticUI([40, 80, 40]);
+    } else {
+        document.getElementById('scan-dot').classList.remove('on');
+        document.getElementById('scan-subtitle').textContent = msg;
+    }
 };
 
 /* ================================================================

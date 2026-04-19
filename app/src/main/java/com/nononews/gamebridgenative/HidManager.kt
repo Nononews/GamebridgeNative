@@ -24,6 +24,7 @@ class HidManager(private val context: Context, private val webView: WebView) {
     private var hidDevice: BluetoothHidDevice? = null
     var connectedHost: BluetoothDevice? = null
         private set
+    private var targetDevice: BluetoothDevice? = null  // device we want to connect to
 
     // Device profile: "ps", "xbox", "generic", "racing"
     var currentProfile: String = "xbox"
@@ -183,8 +184,15 @@ class HidManager(private val context: Context, private val webView: WebView) {
             return
         }
         stopDiscovery()
-        // Start HID stack and it will auto-pair when discovered as HID device
-        start()
+        targetDevice = device  // store so we can connect after HID app registers
+
+        // If HID already registered, connect immediately
+        if (hidDevice != null) {
+            hidDevice!!.connect(device)
+        } else {
+            // Start HID stack; connection will be initiated from onAppStatusChanged
+            start()
+        }
         // Notify JS that we're attempting
         notifyJS("window.onDeviceConnecting && window.onDeviceConnecting(${escapeJS(device.name ?: address)})")
     }
@@ -202,9 +210,19 @@ class HidManager(private val context: Context, private val webView: WebView) {
 
             device.registerApp(sdp, null, null, Executors.newSingleThreadExecutor(), object : BluetoothHidDevice.Callback() {
                 override fun onAppStatusChanged(pluggedDevice: BluetoothDevice?, registered: Boolean) {
-                    Log.i(TAG, "App Status Changed. Registered: $registered")
+                    Log.i(TAG, "App Status Changed. Registered: $registered, target: ${targetDevice?.address}")
                     if (registered) {
                         notifyJS("window.onHidRegistered && window.onHidRegistered()")
+                        // Initiate outgoing connection to the target PC
+                        targetDevice?.let { td ->
+                            try {
+                                val connected = hidDevice?.connect(td)
+                                Log.i(TAG, "HID connect() to ${td.address} result: $connected")
+                            } catch (e: Exception) {
+                                Log.e(TAG, "connect() failed: ${e.message}")
+                                notifyJS("window.onBluetoothError && window.onBluetoothError('CONNECT_FAILED')")
+                            }
+                        }
                     }
                 }
 
