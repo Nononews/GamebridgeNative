@@ -236,7 +236,8 @@
         }
 
         .standard-el {}
-        .racing-el   { display:none; }
+        /* racing-el visibility is controlled entirely via JS inline style */
+        .racing-el   {}
 
         /* Analog stick */
         .analog-stick {
@@ -259,19 +260,38 @@
             width:52px; height:52px; border-radius:50%;
             background:rgba(255,255,255,0.07); border:2px solid rgba(255,255,255,0.2);
             display:flex; align-items:center; justify-content:center;
-            font-size:0.95rem; font-weight:700; color:rgba(255,255,255,0.75);
+            font-size:1.05rem; font-weight:700; color:rgba(255,255,255,0.75);
             font-family:inherit; transition:all 0.09s;
         }
-        .act-top    { border-color:rgba(100,200,255,0.55); color:rgba(100,200,255,0.9); }
-        .act-bottom { border-color:rgba(255,60,100,0.55);  color:rgba(255,60,100,0.9); }
-        .act-left   { border-color:rgba(255,120,30,0.55);  color:rgba(255,120,30,0.9); }
-        .act-right  { border-color:rgba(60,205,110,0.55);  color:rgba(60,205,110,0.9); }
+
+        /* PS Theme face buttons */
+        body.theme-ps .act-top    { border-color:rgba(0,230,118,0.4); color:#00e676; } /* Triangle */
+        body.theme-ps .act-bottom { border-color:rgba(41,121,255,0.4); color:#2979ff; } /* Cross */
+        body.theme-ps .act-left   { border-color:rgba(255,64,129,0.4); color:#ff4081; } /* Square */
+        body.theme-ps .act-right  { border-color:rgba(255,23,68,0.4); color:#ff1744; } /* Circle */
+
+        /* Xbox Theme face buttons */
+        body.theme-xbox .act-top    { border-color:rgba(255,193,7,0.4); color:#ffc107; } /* Y */
+        body.theme-xbox .act-bottom { border-color:rgba(0,230,118,0.4); color:#00e676; } /* A */
+        body.theme-xbox .act-left   { border-color:rgba(41,121,255,0.4); color:#2979ff; } /* X */
+        body.theme-xbox .act-right  { border-color:rgba(255,23,68,0.4); color:#ff1744; } /* B */
+
+        /* Generic Theme face buttons */
+        body.theme-generic .act-top, body.theme-generic .act-bottom,
+        body.theme-generic .act-left, body.theme-generic .act-right {
+             border-color:rgba(200,200,200,0.5); color:white;
+        }
+
+        /* interactive-btn.active: only glowing, NO scale transform
+           (scale causes d-pad buttons to visually shift position) */
         .interactive-btn.active {
             background:rgba(var(--rgb-glow),0.28);
             border-color:var(--theme-glow) !important;
             box-shadow:0 0 18px rgba(var(--rgb-glow),0.5);
-            transform:scale(0.9);
+            /* NO transform:scale here intentionally */
         }
+        /* Face action buttons get a subtle inward feel without shifting */
+        .act-btn.active { transform:scale(0.92); }
 
         /* D-Pad */
         .dpad { position:relative; width:112px; height:112px; }
@@ -396,6 +416,10 @@
             animation:spin 0.85s linear infinite;
         }
         @keyframes spin { to { transform:rotate(360deg); } }
+        @keyframes ripple {
+            0%   { transform:scale(1);   opacity:0.8; }
+            100% { transform:scale(1.35);opacity:0; }
+        }
 
         /* Pairing info box */
         .pair-info-box {
@@ -623,27 +647,68 @@
 </div>
 
 <!-- ================================================================
-     PANTALLA 3: ESCANER BLUETOOTH
+     PANTALLA 3: EMPAREJAMIENTO (MODO PERIFERICO HID)
 ================================================================ -->
 <div id="screen-connect" class="screen">
     <div class="scan-header">
         <button class="scan-back-btn" onclick="goBackToSelection()">&#8592;</button>
         <div class="scan-header-info">
-            <h2>Buscar PC</h2>
-            <p id="scan-subtitle">Presiona Buscar para iniciar el escaneo</p>
+            <h2 id="pair-header-title">Modo Emparejamiento</h2>
+            <p id="scan-subtitle">El dispositivo se anuncia como controlador</p>
         </div>
         <div class="scan-dot" id="scan-dot"></div>
     </div>
-    <div class="scan-action-bar">
-        <span class="scan-badge" id="scan-badge">Xbox</span>
-        <button class="btn btn-primary" onclick="startBluetoothScan()" style="font-size:0.82rem;padding:7px 16px;">&#128268; Buscar</button>
-        <button class="btn btn-outline" onclick="goBackToSelection()" style="font-size:0.82rem;padding:7px 16px;margin-left:auto;">Cancelar</button>
+
+    <!-- MODO PERIFERICO: Anunciarse como gamepad -->
+    <div id="pair-peripheral-panel" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px;text-align:center;">
+
+        <!-- Animacion tipo "controlador buscando" -->
+        <div id="pair-pulse-ring" style="position:relative;width:110px;height:110px;">
+            <div style="position:absolute;inset:0;border-radius:50%;border:2px solid rgba(var(--rgb-glow),0.15);animation:ripple 2s ease infinite;"></div>
+            <div style="position:absolute;inset:10px;border-radius:50%;border:2px solid rgba(var(--rgb-glow),0.25);animation:ripple 2s ease 0.5s infinite;"></div>
+            <div style="position:absolute;inset:20px;border-radius:50%;border:2px solid rgba(var(--rgb-glow),0.4);animation:ripple 2s ease 1s infinite;"></div>
+            <div id="pair-center-ico" style="position:absolute;inset:30px;border-radius:50%;background:rgba(var(--rgb-glow),0.15);border:2px solid var(--theme-glow);display:flex;align-items:center;justify-content:center;font-size:1.6rem;">&#127918;</div>
+        </div>
+
+        <h3 id="pair-mode-name" style="font-size:1.1rem;font-weight:700;color:var(--theme-accent);">Xbox Wireless Controller</h3>
+        <p style="color:var(--text-muted);font-size:0.83rem;max-width:260px;line-height:1.6;">
+            El tel&eacute;fono se anuncia como este controlador.<br>
+            Busca <b id="pair-mode-name2" style="color:var(--theme-accent);">Xbox Wireless Controller</b> en el Bluetooth de tu PC.
+        </p>
+
+        <!-- Pasos en PC -->
+        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:14px;padding:14px 18px;max-width:280px;text-align:left;font-size:0.81rem;line-height:1.8;color:var(--text-muted);">
+            <div style="color:var(--theme-accent);font-weight:700;font-size:0.75rem;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">&#128187; Pasos en Windows</div>
+            <div>&#49;&#65038; Ajustes &rarr; Bluetooth &amp; dispositivos</div>
+            <div>&#50;&#65038; Clic en <b>&#34;Agregar dispositivo&#34;</b></div>
+            <div>&#51;&#65038; Selecciona Bluetooth</div>
+            <div>&#52;&#65038; Busca y haz clic en <b id="pair-mode-name3" style="color:white;">Xbox Wireless Controller</b></div>
+            <div>&#53;&#65038; Confirma el emparejamiento si lo pide</div>
+        </div>
+
+        <div id="pair-status-msg" style="font-size:0.82rem;color:var(--text-muted);">Visible para otros dispositivos...</div>
+
+        <!-- Botones -->
+        <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+            <button class="btn btn-primary" id="pair-start-btn" onclick="startPeripheralMode()" style="font-size:0.84rem;">&#128268; Activar Modo Par</button>
+            <button class="btn btn-outline" onclick="showReconnectScanner()" style="font-size:0.84rem;">Reconectar a PC conocida</button>
+        </div>
+        <button class="btn btn-outline" onclick="goBackToSelection()" style="font-size:0.81rem;opacity:0.7;">Cancelar</button>
     </div>
-    <div id="scan-list-wrapper">
-        <div class="scan-section-lbl">COMPUTADORAS DETECTADAS</div>
-        <div id="scan-computers"><div class="scan-empty">Presiona "Buscar" para escanear...</div></div>
-        <div class="scan-section-lbl" id="scan-others-lbl" style="display:none;">OTROS DISPOSITIVOS</div>
-        <div id="scan-others"></div>
+
+    <!-- RECONECTAR: Lista de dispositivos (oculta por defecto) -->
+    <div id="scan-list-panel" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
+        <div class="scan-action-bar">
+            <span class="scan-badge" id="scan-badge">Xbox</span>
+            <button class="btn btn-primary" onclick="startBluetoothScan()" style="font-size:0.82rem;padding:7px 16px;">&#128268; Escanear</button>
+            <button class="btn btn-outline" onclick="showPeripheralPanel()" style="font-size:0.82rem;padding:7px 16px;margin-left:auto;">&#8592; Volver</button>
+        </div>
+        <div id="scan-list-wrapper" style="flex:1;overflow-y:auto;padding:4px 14px 14px;">
+            <div class="scan-section-lbl">COMPUTADORAS DETECTADAS</div>
+            <div id="scan-computers"><div class="scan-empty">Presiona "Escanear" para buscar...</div></div>
+            <div class="scan-section-lbl" id="scan-others-lbl" style="display:none;">OTROS DISPOSITIVOS</div>
+            <div id="scan-others"></div>
+        </div>
     </div>
 </div>
 
@@ -848,18 +913,22 @@ function loadAndApplyLayout() {
     var data  = saved ? JSON.parse(saved) : defaultLayouts[currentType];
     if (!data) return;
 
-    /* Si la orientacion está cambiando, esperar el evento resize antes de
+    /* Si la orientacion est cambiando, esperar el evento resize antes de
        calcular posiciones (innerWidth/Height cambian TRAS la rotacion) */
     var applied = false;
     function doApply() {
         if (applied) return;
         applied = true;
         window.removeEventListener('resize', doApply);
-        applyLayout(data);
+        /* En Android WebView a veces el DOM tarda un poco despues del evento resize en asentar innerWidth.
+           Agregamos un pequeno timeout logico. */
+        setTimeout(function() {
+            applyLayout(data);
+        }, 120);
     }
     window.addEventListener('resize', doApply);
-    // Fallback: si no hay resize en 700ms (ya estaba en landscape), aplicar igual
-    setTimeout(doApply, 700);
+    // Fallback: si no hay resize en 600ms (ya estaba en landscape), aplicar igual
+    setTimeout(doApply, 600);
 }
 
 function resetLayoutToDefault() {
@@ -978,15 +1047,17 @@ function startSetup(type) {
 
     if (type === 'racing') {
         // Para Carreras: ocultar face buttons y dpad; mantener hombros y sticks
-        var raceHide = ['el-btn-top','el-btn-bot','el-btn-left','el-btn-right','el-dpad','el-l3','el-r3'];
+        var raceHide = ['el-top','el-bot','el-left','el-right','el-dpad','el-l3','el-r3'];
         for (var s = 0; s < allStd.length; s++) {
             var elId = allStd[s].id;
-            allStd[s].style.display = (raceHide.indexOf(elId) !== -1) ? 'none' : '';
+            // Use explicit 'none'/'block' to override any CSS cascade
+            allStd[s].style.display = (raceHide.indexOf(elId) !== -1) ? 'none' : 'block';
         }
-        for (var r = 0; r < allRace.length; r++) allRace[r].style.display = '';
+        // Explicitly set 'block' on racing elements (overrides any CSS)
+        for (var r = 0; r < allRace.length; r++) allRace[r].style.display = 'block';
     } else {
-        // Para otros: mostrar todos estandar, ocultar racing
-        for (var s2 = 0; s2 < allStd.length;  s2++) allStd[s2].style.display  = '';
+        // Para otros: mostrar todos estandar, ocultar racing explicitamente
+        for (var s2 = 0; s2 < allStd.length;  s2++) allStd[s2].style.display = 'block';
         for (var r2 = 0; r2 < allRace.length; r2++) allRace[r2].style.display = 'none';
     }
 
@@ -1152,21 +1223,83 @@ makeStick('el-rstick', 'thumb-r');
 })();
 
 /* ================================================================
-   BLUETOOTH SCANNER
+   BLUETOOTH: MODO PERIFERICO HID
+   El telefono SE ANUNCIA como gamepad y espera que el PC lo encuentre
 ================================================================ */
+
+/* Nombres HID por perfil (lo que el PC vera en su lista BT) */
+var hidNames = {
+    ps:      'Wireless Controller',
+    xbox:    'Xbox Wireless Controller',
+    generic: 'GameBridge Controller',
+    racing:  'GameBridge Wheel'
+};
+
+/* Mostrar la pantalla de emparejamiento */
 function connectToPC() {
     hapticUI(28);
     closeAllModals();
-    var names = { ps:'PlayStation', xbox:'Xbox', generic:'Generico', racing:'Carreras' };
-    document.getElementById('scan-badge').textContent = names[currentType] || currentType;
-    document.getElementById('scan-computers').innerHTML = '<div class="scan-empty">Presiona "Buscar" para escanear...</div>';
-    document.getElementById('scan-others').innerHTML    = '';
-    document.getElementById('scan-others-lbl').style.display = 'none';
+    var hidName = hidNames[currentType] || 'GameBridge Controller';
+    var badge   = { ps:'PlayStation', xbox:'Xbox', generic:'Generico', racing:'Carreras' }[currentType] || currentType;
+
+    /* Actualizar nombres en la pantalla */
+    document.getElementById('pair-mode-name').textContent  = hidName;
+    document.getElementById('pair-mode-name2').textContent = hidName;
+    document.getElementById('pair-mode-name3').textContent = hidName;
+    document.getElementById('scan-badge').textContent      = badge;
     document.getElementById('scan-dot').classList.remove('on');
-    document.getElementById('scan-subtitle').textContent = 'Presiona Buscar para iniciar el escaneo';
+    document.getElementById('pair-status-msg').textContent = 'Presiona "Activar Modo Par" para comenzar';
+
+    /* Iconos por perfil */
+    var ico = { ps:'&#127918;', xbox:'&#127918;', generic:'&#127918;', racing:'&#127947;' }[currentType] || '&#127918;';
+    document.getElementById('pair-center-ico').innerHTML = ico;
+
+    showPeripheralPanel();
     showScreen('screen-connect');
 }
 
+/* Mostrar panel principal (modo periférico) */
+function showPeripheralPanel() {
+    document.getElementById('pair-peripheral-panel').style.display = 'flex';
+    document.getElementById('scan-list-panel').style.display       = 'none';
+}
+
+/* Mostrar panel de reconexión (escáner) */
+function showReconnectScanner() {
+    hapticUI(14);
+    document.getElementById('pair-peripheral-panel').style.display = 'none';
+    document.getElementById('scan-list-panel').style.display       = 'flex';
+    document.getElementById('scan-computers').innerHTML = '<div class="scan-empty">Presiona "Escanear" para buscar...</div>';
+    document.getElementById('scan-others').innerHTML    = '';
+    document.getElementById('scan-others-lbl').style.display = 'none';
+}
+
+/* ACTIVAR MODO PERIFERICO: Android se anuncia como gamepad HID */
+function startPeripheralMode() {
+    hapticUI(28);
+    var hidName = hidNames[currentType] || 'GameBridge Controller';
+    document.getElementById('pair-status-msg').textContent = 'Anunciando como "' + hidName + '"...';
+    document.getElementById('scan-dot').classList.add('on');
+    document.getElementById('pair-start-btn').textContent  = 'Esperando PC...';
+
+    if (window.AndroidBridge) {
+        /* 1. Registrar HID con el nombre correcto (ya hecho en setConfig) */
+        /* 2. Hacer el adaptador visible (discoverability) */
+        window.AndroidBridge.solicitarVisibilidadBluetooth();
+        /* 3. Registrar la app HID para que aparezca como el dispositivo */
+        window.AndroidBridge.conectarBluetooth();
+    }
+
+    /* Si el nativo no confirma en 30s, mostrar advertencia */
+    connTimeoutId = setTimeout(function() {
+        document.getElementById('pair-status-msg').textContent = 'Sin respuesta del PC. Intenta Reconectar o verifica que BT este activo.';
+        document.getElementById('scan-dot').classList.remove('on');
+        document.getElementById('pair-start-btn').textContent = '&#128268; Activar Modo Par';
+        hapticUI([40, 80, 40]);
+    }, 30000);
+}
+
+/* Escanear para reconectar a una PC conocida */
 function startBluetoothScan() {
     hapticUI(22);
     document.getElementById('scan-computers').innerHTML = '<div class="scan-empty">Escaneando...</div>';
@@ -1185,20 +1318,20 @@ function startBluetoothScan() {
     }
 }
 
+/* Reconectar a una PC concreta por MAC */
 function connectDevice(address, name) {
     hapticUI(18);
     lastConnectedAddress = address;
     lastConnectedName    = name;
-    /* Restablecer spinner */
     var spinner = document.getElementById('conn-spinner');
     if (spinner) spinner.style.display = 'block';
-    /* Llamada nativa */
     if (window.AndroidBridge && window.AndroidBridge.conectarDispositivo) {
         window.AndroidBridge.conectarDispositivo(address);
     } else {
         window.onDeviceConnecting(name);
     }
 }
+
 
 /* --- Callbacks desde HidManager (evaluateJavascript) --- */
 
@@ -1308,7 +1441,17 @@ window.onDeviceDisconnected = function() {
     }
 };
 
-window.onHidRegistered = function() {};
+window.onHidRegistered = function() {
+    /* HID profile active: device is now broadcasting as the gamepad */
+    var hidName = hidNames[currentType] || 'GameBridge Controller';
+    var msg = document.getElementById('pair-status-msg');
+    if (msg) {
+        msg.textContent = '&#10003; Activo — Buscando "' + hidName + '" en tu PC...';
+        msg.style.color = 'var(--theme-accent)';
+    }
+    var dot = document.getElementById('scan-dot');
+    if (dot) dot.classList.add('on');
+};
 
 /* Reintentar la ultima conexion */
 function retryConnect() {

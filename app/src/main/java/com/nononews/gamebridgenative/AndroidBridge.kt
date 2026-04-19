@@ -31,14 +31,17 @@ class AndroidBridge(private val activity: MainActivity, private val hidManager: 
         hidManager.start()
     }
 
-    /** Make device discoverable (120s) and start HID profile */
+    /** Make device discoverable (300s = 5 min) - called before HID registration
+     *  so the PC can find and initiate the pairing */
     @JavascriptInterface
     fun solicitarVisibilidadBluetooth() {
-        val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
-            putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        activity.runOnUiThread {
+            val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
+                putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300) // 5 minutes
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            activity.startActivity(discoverableIntent)
         }
-        activity.startActivity(discoverableIntent)
     }
 
     /** Start scanning for nearby Bluetooth devices */
