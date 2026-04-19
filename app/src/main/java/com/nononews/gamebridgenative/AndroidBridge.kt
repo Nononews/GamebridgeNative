@@ -10,6 +10,10 @@ class AndroidBridge(private val activity: MainActivity, private val hidManager: 
     @JavascriptInterface
     fun setConfig(profileType: String) {
         hidManager.setProfile(profileType)
+        // Request Bluetooth permissions NOW (after user explicitly chose a controller)
+        activity.runOnUiThread {
+            activity.requestPermissionsIfNeeded()
+        }
     }
 
     /** Rotate screen: landscape=true for gamepad, false=portrait for menu */

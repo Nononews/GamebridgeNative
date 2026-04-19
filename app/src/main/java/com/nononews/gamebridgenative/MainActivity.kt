@@ -46,8 +46,7 @@ class MainActivity : AppCompatActivity() {
 
         webView.addJavascriptInterface(AndroidBridge(this, hidManager), "AndroidBridge")
         webView.loadUrl("file:///android_asset/index.html")
-
-        requestAllPermissions()
+        // Permissions requested when user picks a joystick (via AndroidBridge.setConfig)
     }
 
     fun setOrientation(landscape: Boolean) {
@@ -55,6 +54,11 @@ class MainActivity : AppCompatActivity() {
             ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         else
             ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    }
+
+    /** Called by AndroidBridge.setConfig() when user picks a joystick */
+    fun requestPermissionsIfNeeded() {
+        requestAllPermissions()
     }
 
     private fun requestAllPermissions() {

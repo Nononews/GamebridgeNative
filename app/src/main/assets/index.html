@@ -304,6 +304,11 @@
             transition: transform 0.3s ease;
         }
 
+        /* Only show toolbar when gamepad screen is active */
+        #screen-gamepad:not(.active) .top-toolbar { display: none !important; }
+        #screen-gamepad:not(.active) .settings-modal,
+        #screen-gamepad:not(.active) .scale-panel { display: none !important; }
+
         .status-badge {
             display: flex;
             align-items: center;
@@ -930,7 +935,7 @@
 <body class="theme-init">
     <canvas id="bg-canvas"></canvas>
 
-    <!-- SCREEN 1: SELECCIÃ“N (PORTRAIT) -->
+    <!-- SCREEN 1: SELECCION (PORTRAIT) -->
     <div id="screen-selection" class="screen active">
         <h1 class="header-title">GameBridge</h1>
         <p class="header-subtitle">Selecciona tu Perfil</p>
@@ -969,9 +974,8 @@
                         <circle cx="16" cy="12" r="1.5"></circle>
                         <circle cx="18" cy="10" r="1.5"></circle>
                     </svg>
-                </div>
-                <div class="card-title">GenÃ©rico</div>
-                <div class="card-desc">EstÃ¡ndar Naranja</div>
+                <div class="card-title">Generico</div>
+                <div class="card-desc">Estandar HID</div>
             </div>
 
             <div class="controller-card racing" onclick="startSetup('racing')">
@@ -995,7 +999,7 @@
         <div class="editor-grid" id="editor-grid"></div>
 
         <div class="top-toolbar" id="toolbar">
-            <button id="btn-back" onclick="goBackToSelection()" style="display:flex;align-items:center;justify-content:center;background:none;border:1.5px solid rgba(255,255,255,0.2);color:white;width:36px;height:36px;border-radius:50%;font-size:1.1rem;cursor:pointer;flex-shrink:0;">&#8592;</button>
+            <button id="btn-back" onclick="goBackToSelection()" style="display:none;align-items:center;justify-content:center;background:none;border:1.5px solid rgba(255,255,255,0.2);color:white;width:36px;height:36px;border-radius:50%;font-size:1.1rem;cursor:pointer;flex-shrink:0;">&#8592;</button>
             <div class="status-badge" id="hud-status"><span class="dot"></span> <span id="hud-title">Modo Prueba</span></div>
             <div id="test-controls" style="display: flex; gap: 10px; align-items: center;">
                 <button class="btn btn-outline" onclick="setMode('edit')">&#9881; Editar HUD</button>
@@ -1046,7 +1050,7 @@
 
         <div class="gamepad-container state-test" id="gamepad-area">
 
-            <!-- ====== ESTÃNDAR ====== -->
+            <!-- ====== ESTANDAR ====== -->
             <div class="gp-element standard-el" id="el-lstick" data-id="lstick">
                 <div class="analog-stick">
                     <div class="analog-thumb" id="thumb-l"></div>
