@@ -903,6 +903,15 @@ function applyLayout(data) {
 }
 
 function loadAndApplyLayout() {
+    // Clear legacy layout cache to force the new PS/Xbox distinct layouts
+    var versionKey = localStorage.getItem('gb_version_1.1');
+    if (!versionKey) {
+        localStorage.removeItem('gb_layout_ps');
+        localStorage.removeItem('gb_layout_xbox');
+        localStorage.removeItem('gb_layout_generic');
+        localStorage.setItem('gb_version_1.1', 'true');
+    }
+
     var saved = localStorage.getItem('gb_layout_' + currentType);
     var data  = saved ? JSON.parse(saved) : defaultLayouts[currentType];
     if (!data) return;
@@ -1214,195 +1223,73 @@ makeStick('el-rstick', 'thumb-r');
 })();
 
 /* ================================================================
-   BLUETOOTH: MODO PERIFERICO HID
-   El telefono SE ANUNCIA como gamepad y espera que el PC lo encuentre
+   WIFI/UDP: MODO SERVIDOR PC
 ================================================================ */
 
-/* Nombres HID por perfil (lo que el PC vera en su lista BT) */
-var hidNames = {
-    ps:      'Wireless Controller',
-    xbox:    'Xbox Wireless Controller',
-    generic: 'GameBridge Controller',
-    racing:  'GameBridge Wheel'
-};
-
-/* Mostrar la pantalla de emparejamiento */
 function connectToPC() {
     hapticUI(28);
     closeAllModals();
-    var hidName = hidNames[currentType] || 'GameBridge Controller';
-    var badge   = { ps:'PlayStation', xbox:'Xbox', generic:'Generico', racing:'Carreras' }[currentType] || currentType;
-
-    /* Actualizar nombres en la pantalla */
-    document.getElementById('pair-mode-name').textContent  = hidName;
-    document.getElementById('pair-mode-name2').textContent = hidName;
-    document.getElementById('pair-mode-name3').textContent = hidName;
-    document.getElementById('scan-badge').textContent      = badge;
+    
+    // Cargar ultima IP usada si existe
+    var savedIp = localStorage.getItem('gamebridge_last_ip') || '';
+    document.getElementById('pc-ip-input').value = savedIp;
+    document.getElementById('ip-error-msg').style.display = 'none';
+    
+    document.getElementById('pair-status-msg').textContent = 'Ingresa la IP y conecta';
     document.getElementById('scan-dot').classList.remove('on');
-    document.getElementById('pair-status-msg').textContent = 'Presiona "Activar Modo Par" para comenzar';
-
-    /* Iconos por perfil */
-    var ico = { ps:'&#127918;', xbox:'&#127918;', generic:'&#127918;', racing:'&#127947;' }[currentType] || '&#127918;';
-    document.getElementById('pair-center-ico').innerHTML = ico;
-
-    showPeripheralPanel();
+    
     showScreen('screen-connect');
 }
 
-/* Mostrar panel principal (modo periférico) */
-function showPeripheralPanel() {
-    document.getElementById('pair-peripheral-panel').style.display = 'flex';
-    document.getElementById('scan-list-panel').style.display       = 'none';
-}
-
-/* Mostrar panel de reconexión (escáner) */
-function showReconnectScanner() {
-    hapticUI(14);
-    document.getElementById('pair-peripheral-panel').style.display = 'none';
-    document.getElementById('scan-list-panel').style.display       = 'flex';
-    document.getElementById('scan-computers').innerHTML = '<div class="scan-empty">Presiona "Escanear" para buscar...</div>';
-    document.getElementById('scan-others').innerHTML    = '';
-    document.getElementById('scan-others-lbl').style.display = 'none';
-}
-
-/* ACTIVAR MODO PERIFERICO: Android se anuncia como gamepad HID */
-function startPeripheralMode() {
+function startWifiConnection() {
     hapticUI(28);
-    var hidName = hidNames[currentType] || 'GameBridge Controller';
-    document.getElementById('pair-status-msg').textContent = 'Anunciando como "' + hidName + '"...';
-    document.getElementById('scan-dot').classList.add('on');
-    document.getElementById('pair-start-btn').textContent  = 'Esperando PC...';
-
-    if (window.AndroidBridge) {
-        /* 1. Registrar HID con el nombre correcto (ya hecho en setConfig) */
-        /* 2. Hacer el adaptador visible (discoverability) */
-        window.AndroidBridge.solicitarVisibilidadBluetooth();
-        /* 3. Registrar la app HID para que aparezca como el dispositivo */
-        window.AndroidBridge.conectarBluetooth();
+    var ip = document.getElementById('pc-ip-input').value.trim();
+    if (!ip || !ip.match(/^\d{1,3}(\.\d{1,3}){3}$/)) {
+        document.getElementById('ip-error-msg').style.display = 'block';
+        return;
     }
-
-    /* Si el nativo no confirma en 30s, mostrar advertencia */
-    connTimeoutId = setTimeout(function() {
-        document.getElementById('pair-status-msg').textContent = 'Sin respuesta del PC. Intenta Reconectar o verifica que BT este activo.';
-        document.getElementById('scan-dot').classList.remove('on');
-        document.getElementById('pair-start-btn').textContent = '&#128268; Activar Modo Par';
-        hapticUI([40, 80, 40]);
-    }, 30000);
-}
-
-/* Escanear para reconectar a una PC conocida */
-function startBluetoothScan() {
-    hapticUI(22);
-    document.getElementById('scan-computers').innerHTML = '<div class="scan-empty">Escaneando...</div>';
-    document.getElementById('scan-others').innerHTML    = '';
-    document.getElementById('scan-others-lbl').style.display = 'none';
+    
+    // Guardar para futuro
+    localStorage.setItem('gamebridge_last_ip', ip);
+    document.getElementById('ip-error-msg').style.display = 'none';
+    
+    document.getElementById('pair-status-msg').textContent = 'Conectando a ' + ip + '...';
     document.getElementById('scan-dot').classList.add('on');
-    document.getElementById('scan-subtitle').textContent = 'Buscando dispositivos Bluetooth...';
-    if (window.AndroidBridge && window.AndroidBridge.iniciarEscaneo) {
-        window.AndroidBridge.iniciarEscaneo();
+    document.getElementById('pair-start-btn').textContent  = 'Conectando...';
+
+    if (window.AndroidBridge && window.AndroidBridge.conectarRedLocal) {
+        window.AndroidBridge.conectarRedLocal(ip);
     } else {
+        // Modo web (simulacion)
         setTimeout(function() {
-            document.getElementById('scan-dot').classList.remove('on');
-            document.getElementById('scan-computers').innerHTML =
-                '<div class="scan-empty" style="color:#ff7070;">Bluetooth nativo no disponible en navegador web</div>';
-        }, 2000);
+            window.onNetworkConnected(ip);
+        }, 1000);
     }
 }
 
-/* Reconectar a una PC concreta por MAC */
-function connectDevice(address, name) {
-    hapticUI(18);
-    lastConnectedAddress = address;
-    lastConnectedName    = name;
-    var spinner = document.getElementById('conn-spinner');
-    if (spinner) spinner.style.display = 'block';
-    if (window.AndroidBridge && window.AndroidBridge.conectarDispositivo) {
-        window.AndroidBridge.conectarDispositivo(address);
-    } else {
-        window.onDeviceConnecting(name);
-    }
-}
-
-
-/* --- Callbacks desde HidManager (evaluateJavascript) --- */
-
-window.onDeviceFound = function(name, address, isComputer) {
-    if (isComputer) {
-        var c = document.getElementById('scan-computers');
-        if (c && c.querySelector('.scan-empty')) c.innerHTML = '';
-        if (c) {
-            var r = document.createElement('div'); r.className = 'device-row is-pc';
-            r.onclick = function() { connectDevice(address, name); };
-            r.innerHTML = '<div class="device-ico">&#128421;</div>' +
-                '<div class="device-info-col"><div class="device-name">' + name + '</div>' +
-                '<div class="device-mac">' + address + '</div></div>' +
-                '<div class="device-pc-badge">PC</div>';
-            c.appendChild(r);
-        }
-    } else {
-        document.getElementById('scan-others-lbl').style.display = 'block';
-        var o = document.getElementById('scan-others');
-        if (o) {
-            var r2 = document.createElement('div'); r2.className = 'device-row';
-            r2.onclick = function() { connectDevice(address, name); };
-            r2.innerHTML = '<div class="device-ico">&#128241;</div>' +
-                '<div class="device-info-col"><div class="device-name">' + name + '</div>' +
-                '<div class="device-mac">' + address + '</div></div>';
-            o.appendChild(r2);
-        }
-    }
-};
-
-window.onBluetoothScanFinished = function() {
-    document.getElementById('scan-dot').classList.remove('on');
-    document.getElementById('scan-subtitle').textContent = 'Escaneo completo — toca un PC para conectar';
-    var c = document.getElementById('scan-computers');
-    if (c && !c.querySelector('.device-row'))
-        c.innerHTML = '<div class="scan-empty">No se encontraron PCs. Asegurate de que tu PC tenga Bluetooth activo y sea visible.</div>';
-};
-
-var connTimeoutId = null;
-
-window.onDeviceConnecting = function(name) {
-    // Cancel any previous timeout
-    if (connTimeoutId) { clearTimeout(connTimeoutId); connTimeoutId = null; }
-
-    var deviceNames = { ps:'Wireless Controller', xbox:'Xbox Wireless Controller', generic:'GameBridge Controller', racing:'GameBridge Wheel' };
-    var hidName = deviceNames[currentType] || 'GameBridge Controller';
-    document.getElementById('conn-title').textContent  = 'Conectando a ' + name + '...';
-    document.getElementById('conn-sub').textContent    = 'Buscando emparejamiento Bluetooth...';
-    document.getElementById('pair-device-name').textContent = hidName;
-    document.getElementById('pair-info').style.display = 'block';
-    document.getElementById('conn-error-box').style.display = 'none';
-    showScreen('screen-connecting');
-
-    /* Timeout: si no responde en 25 segundos, mostrar error */
-    connTimeoutId = setTimeout(function() {
-        connTimeoutId = null;
-        document.getElementById('conn-title').textContent = 'Sin respuesta del PC';
-        document.getElementById('conn-sub').textContent   = 'El dispositivo no respondio a tiempo';
-        document.getElementById('pair-info').style.display   = 'none';
-        document.getElementById('conn-error-box').style.display = 'flex';
-        hapticUI([40, 80, 40]);
-    }, 25000);
-};
-
-window.onDeviceConnected = function(name) {
-    /* Cancelar timeout de conexion */
-    if (connTimeoutId) { clearTimeout(connTimeoutId); connTimeoutId = null; }
-    hapticUI([30, 60, 30]);
-    document.getElementById('pair-info').style.display      = 'none';
-    document.getElementById('conn-error-box').style.display = 'none';
-    document.getElementById('conn-title').textContent  = '\u2713 Conectado a ' + name;
-    document.getElementById('conn-sub').textContent    = 'Iniciando modo gamepad...';
+window.onNetworkConnected = function(ip) {
+    document.getElementById('pair-status-msg').textContent = '¡Conectado! Preparando control...';
+    // Esperar un segundito y cargar
     setTimeout(function() {
-        setMode('play'); showScreen('screen-gamepad'); startHidLoop();
-    }, 900);
+        setMode('play');
+        showScreen('screen-gamepad');
+        startControllerLoop();
+    }, 800);
 };
 
-/* Guardar la ultima MAC intentada para retryConnect */
+window.onNetworkError = function(err) {
+    document.getElementById('pair-status-msg').textContent = 'Error: ' + err;
+    document.getElementById('scan-dot').classList.remove('on');
+    document.getElementById('pair-start-btn').textContent = 'Reintentar';
+};
+
+/* --- Mocks/Placeholders vacíos --- */
+function showPeripheralPanel() {}
+function connectDevice(address, name) {}
+function startBluetoothScan() {}
+function showReconnectScanner() {}
 var lastConnectedAddress = null;
-var lastConnectedName    = null;
+var lastConnectedName = null;
 
 window.onDeviceDisconnected = function() {
     if (appState === 'play') {

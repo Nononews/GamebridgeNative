@@ -58,53 +58,15 @@ class MainActivity : AppCompatActivity() {
 
     /** Called by AndroidBridge.setConfig() when user picks a joystick */
     fun requestPermissionsIfNeeded() {
-        requestAllPermissions()
-    }
-
-    private fun requestAllPermissions() {
-        val permsNeeded = mutableListOf<String>()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Android 12+
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
-                permsNeeded.add(Manifest.permission.BLUETOOTH_CONNECT)
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADVERTISE) != PackageManager.PERMISSION_GRANTED)
-                permsNeeded.add(Manifest.permission.BLUETOOTH_ADVERTISE)
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED)
-                permsNeeded.add(Manifest.permission.BLUETOOTH_SCAN)
-        } else {
-            // Android 11 and below
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED)
-                permsNeeded.add(Manifest.permission.BLUETOOTH)
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-                permsNeeded.add(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-
-        if (permsNeeded.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, permsNeeded.toTypedArray(), REQUEST_PERMISSIONS)
-        } else {
-            ensureBluetoothEnabled()
-        }
+        // No longer demanding Bluetooth permissions since we migrated to UDP Wi-Fi locally.
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_PERMISSIONS) {
-            ensureBluetoothEnabled()
-        }
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun ensureBluetoothEnabled() {
-        val adapter = BluetoothAdapter.getDefaultAdapter() ?: return
-        if (!adapter.isEnabled) {
-            startActivityForResult(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), REQUEST_ENABLE_BT)
-        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        // After BT enable dialog - proceed
     }
 
     private fun hideSystemUI() {
