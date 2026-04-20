@@ -1342,9 +1342,18 @@ window.onDeviceDisconnected = function() {
         setMode('test');
         
         /* Alarma llamativa y profesional pidiendo volver a conectar */
-        alert("⚠️ ATENCIÓN: SE HA PERDIDO LA CONEXIÓN ⚠️\n\nEl Joystick se ha desconectado de tu computadora.\nVerifica que el PC Server y el Wi-Fi estén funcionando correctamente.");
+        var errOverlay = document.createElement('div');
+        errOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;backdrop-filter:blur(10px);';
         
-        goBackToSelection();
+        var content = '<div style="font-size:3.5rem;margin-bottom:10px;text-shadow:0 0 20px rgba(255,50,50,0.6);">⚠️</div>';
+        content += '<h2 style="color:#ff4444;font-size:1.4rem;font-weight:800;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">Se ha perdido la conexión</h2>';
+        content += '<p style="color:var(--text-muted);font-size:0.95rem;line-height:1.5;max-width:300px;margin-bottom:28px;">El Joystick se desconectó de tu computadora de forma inesperada.<br><br>Verifica que el Servidor PC esté abierto y que sigas en la misma red Wi-Fi.</p>';
+        content += '<button class="btn btn-primary" onclick="this.parentElement.remove(); goBackToSelection();" style="padding:12px 35px;font-size:1rem;font-weight:700;background:#ff4444;border-color:#ff4444;box-shadow:0 0 15px rgba(255,0,0,0.3);">Entendido</button>';
+        
+        errOverlay.innerHTML = content;
+        document.body.appendChild(errOverlay);
+        
+        // No llamamos a goBackToSelection() inmediatamente, lo hace el boton.
     }
 };
 

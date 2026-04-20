@@ -16,6 +16,7 @@
         android:label="Gamebridge Native"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
         android:theme="@style/Theme.GamebridgeNative"> <!-- Important for immersive -->
         <activity
             android:name=".MainActivity"
