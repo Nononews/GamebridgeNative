@@ -674,12 +674,8 @@
     <!-- WIFI CONNECTION UI -->
     <div id="pair-peripheral-panel" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:20px;padding:24px 24px 60px;text-align:center;overflow-y:auto;">
         
-        <div id="pair-pulse-ring" style="position:relative;width:110px;height:110px;">
-            <div style="position:absolute;inset:0;border-radius:50%;border:2px solid rgba(var(--rgb-glow),0.15);animation:ripple 2s ease infinite;"></div>
-            <div style="position:absolute;inset:10px;border-radius:50%;border:2px solid rgba(var(--rgb-glow),0.25);animation:ripple 2s ease 0.5s infinite;"></div>
-            <div style="position:absolute;inset:20px;border-radius:50%;border:2px solid rgba(var(--rgb-glow),0.4);animation:ripple 2s ease 1s infinite;"></div>
-            <div id="pair-center-ico" style="position:absolute;inset:30px;border-radius:50%;background:rgba(var(--rgb-glow),0.15);border:2px solid var(--theme-glow);display:flex;align-items:center;justify-content:center;font-size:1.6rem;">&#128187;</div>
-        </div>
+        <!-- Icono estático modernizado en vez de radar -->
+        <div style="font-size:2.8rem; margin-bottom:-10px; text-shadow:0 0 15px var(--theme-glow); color:var(--theme-accent);">&#128187;</div>
 
         <h3 id="pair-mode-name" style="font-size:1.1rem;font-weight:700;color:var(--theme-accent);">GameBridge PC Server</h3>
         <p style="color:var(--text-muted);font-size:0.83rem;max-width:260px;line-height:1.6;">
