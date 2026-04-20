@@ -1293,6 +1293,29 @@ window.onNetworkConnected = function(ip) {
         showScreen('screen-gamepad');
         startControllerLoop();
         
+        // Polling de estado vital (Health Check Oficial CORS + Cleartext habilitado)
+        if (window.healthPollId) clearInterval(window.healthPollId);
+        var fails = 0;
+        window.healthPollId = setInterval(function() {
+            if (appState !== 'play') return;
+            fetch('http://' + ip + ':8080/api/status')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                fails = 0;
+                // Si el PC dice que ya no estamos conectados porque no llegaron UDPs:
+                if (d && d.connected === false) {
+                    window.onDeviceDisconnected();
+                }
+            })
+            .catch(function(e) {
+                fails++;
+                // 3 fails = PC fue cerrado, apagado o red muerta
+                if (fails >= 3) {
+                    window.onDeviceDisconnected();
+                }
+            });
+        }, 1500);
+
     }, 800);
 };
 
