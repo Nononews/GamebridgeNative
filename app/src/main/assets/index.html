@@ -1286,11 +1286,36 @@ function startWifiConnection() {
 
 window.onNetworkConnected = function(ip) {
     document.getElementById('pair-status-msg').textContent = '¡Conectado! Preparando control...';
+    window.currentPcIp = ip;
     // Esperar un segundito y cargar
     setTimeout(function() {
         setMode('play');
         showScreen('screen-gamepad');
         startControllerLoop();
+        
+        // Polling de estado vital (Health Polling)
+        if (window.healthPollId) clearInterval(window.healthPollId);
+        var fails = 0;
+        window.healthPollId = setInterval(function() {
+            if (appState !== 'play') return;
+            fetch('http://' + ip + ':8080/api/status')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                fails = 0;
+                // Si el PC dice que ya no estamos conectados (pasó el timeout de 2 seg allá):
+                if (d && d.connected === false) {
+                    window.onDeviceDisconnected();
+                }
+            })
+            .catch(function(e) {
+                fails++;
+                // 3 fails seguidos = ~3.6s sin respuesta del server HTTP (PC apagado/caido)
+                if (fails >= 3) {
+                    window.onDeviceDisconnected();
+                }
+            });
+        }, 1200);
+        
     }, 800);
 };
 
@@ -1310,29 +1335,16 @@ var lastConnectedName = null;
 
 window.onDeviceDisconnected = function() {
     if (appState === 'play') {
-        hapticUI([50, 100, 50]);
+        stopControllerLoop();
+        if (window.healthPollId) { clearInterval(window.healthPollId); window.healthPollId = null; }
+        
+        hapticUI([50, 100, 50, 100, 50]);
         setMode('test');
-        /* Mostrar notificacion de desconexion con opcion de reconectar */
-        var bar = document.getElementById('hud-status');
-        if (bar) {
-            bar.style.borderColor = '#ff4444';
-            document.getElementById('hud-title').textContent = 'Desconectado';
-        }
-        showScreen('screen-gamepad');
-        /* Auto-ofrecer reconectar tras 2s si tenemos la MAC */
-        if (lastConnectedAddress) {
-            setTimeout(function() {
-                if (appState === 'test') {
-                    var btn = document.createElement('button');
-                    btn.className = 'btn btn-primary';
-                    btn.textContent = '\u21ba Reconectar';
-                    btn.style.cssText = 'position:absolute;bottom:20px;left:50%;transform:translateX(-50%);z-index:300;';
-                    btn.id = 'reconnect-btn';
-                    btn.onclick = function() { btn.remove(); retryConnect(); };
-                    document.getElementById('screen-gamepad').appendChild(btn);
-                }
-            }, 2000);
-        }
+        
+        /* Alarma llamativa y profesional pidiendo volver a conectar */
+        alert("⚠️ ATENCIÓN: SE HA PERDIDO LA CONEXIÓN ⚠️\n\nEl Joystick se ha desconectado de tu computadora.\nVerifica que el PC Server y el Wi-Fi estén funcionando correctamente.");
+        
+        goBackToSelection();
     }
 };
 
@@ -1457,15 +1469,25 @@ function startControllerLoop() {
         if (thumbL && thumbL.classList.contains('pressed')) {
             // we'd need exact px parsing here, for now it's raw
         }
+        var now = Date.now();
+        if (now - (window.lastKeepaliveTime || 0) > 400) {
+            payload._ts = now; // Fuerza a Kotlin a detectar un JSON distinto y enviar UDP!
+        }
         
         var currentJson = JSON.stringify(payload);
-        var now = Date.now();
-        if (currentJson !== lastJson || (now - (window.lastKeepaliveTime || 0)) > 500) {
+        if (currentJson !== lastJson) {
             window.AndroidBridge.enviarEstadoRedLocal(currentJson);
             lastJson = currentJson;
-            window.lastKeepaliveTime = now;
+            if (payload._ts) window.lastKeepaliveTime = now;
         }
     }, 16); // 60Hz = 16.6ms
+}
+
+function stopControllerLoop() {
+    if (window.controllerLoopId) {
+        clearInterval(window.controllerLoopId);
+        window.controllerLoopId = null;
+    }
 }
 </script>
 </body>
