@@ -325,6 +325,12 @@
             font-size:0.74rem; font-weight:700; color:rgba(255,255,255,0.75);
             font-family:inherit; transition:all 0.09s;
         }
+        .menu-btn {
+            background:rgba(255,255,255,0.08); border:1.5px solid rgba(255,255,255,0.18);
+            border-radius:12px; padding:6px 14px;
+            font-size:0.75rem; font-weight:700; color:rgba(255,255,255,0.78);
+            font-family:inherit; transition:all 0.09s; letter-spacing:0.5px;
+        }
 
         /* Racing extras */
         .steer-btn {
@@ -517,7 +523,7 @@
         </div>
         <div id="test-controls">
             <button class="btn btn-outline" onclick="setMode('edit')">&#9881; Editar</button>
-            <button class="btn btn-primary" onclick="connectToPC()">Conectar &#10145;</button>
+            <button class="btn btn-primary" id="ui-btn-connect" onclick="connectToPC()">Conectar &#10145;</button>
             <button class="btn btn-outline" onclick="toggleModal('settings-modal')" style="padding:7px 12px;border-radius:50%;">&#9881;</button>
         </div>
         <div id="edit-controls">
@@ -611,6 +617,12 @@
         </div>
         <div class="gp-element standard-el" id="el-r3" data-id="r3">
             <div class="stick-btn-group interactive-btn" id="lbl-r3">R3</div>
+        </div>
+        <div class="gp-element standard-el" id="el-select" data-id="select">
+            <div class="menu-btn interactive-btn" id="lbl-select">Select</div>
+        </div>
+        <div class="gp-element standard-el" id="el-start" data-id="start">
+            <div class="menu-btn interactive-btn" id="lbl-start">Start</div>
         </div>
 
         <!-- ===== RACING EXTRA ===== -->
@@ -765,8 +777,9 @@ var defaultLayouts = {
         lstick:   {cx:34, cy:77},
         rstick:   {cx:66, cy:77},
         l3:       {cx:26, cy:80}, r3:    {cx:74, cy:80},
-        'btn-top':  {cx:80, cy:42}, 'btn-bot': {cx:80, cy:64},
-        'btn-left': {cx:69, cy:53}, 'btn-right':{cx:91, cy:53}
+        select:   {cx:40, cy:45}, start: {cx:60, cy:45},
+        'btn-top':  {cx:80, cy:44}, 'btn-bot': {cx:80, cy:62},
+        'btn-left': {cx:74, cy:53}, 'btn-right':{cx:86, cy:53}
     },
     xbox: {
         l2:       {cx:12, cy:16}, r2:    {cx:88, cy:16},
@@ -775,8 +788,9 @@ var defaultLayouts = {
         dpad:     {cx:34, cy:77},
         rstick:   {cx:65, cy:77},
         l3:       {cx:30, cy:60}, r3:    {cx:74, cy:80},
-        'btn-top':  {cx:80, cy:42}, 'btn-bot': {cx:80, cy:64},
-        'btn-left': {cx:69, cy:53}, 'btn-right':{cx:91, cy:53}
+        select:   {cx:40, cy:45}, start: {cx:60, cy:45},
+        'btn-top':  {cx:80, cy:44}, 'btn-bot': {cx:80, cy:62},
+        'btn-left': {cx:74, cy:53}, 'btn-right':{cx:86, cy:53}
     },
     generic: {
         l2:       {cx:12, cy:16}, r2:    {cx:88, cy:16},
@@ -785,8 +799,9 @@ var defaultLayouts = {
         lstick:   {cx:34, cy:77},
         rstick:   {cx:66, cy:77},
         l3:       {cx:26, cy:80}, r3:    {cx:74, cy:80},
-        'btn-top':  {cx:80, cy:42}, 'btn-bot': {cx:80, cy:64},
-        'btn-left': {cx:69, cy:53}, 'btn-right':{cx:91, cy:53}
+        select:   {cx:40, cy:45}, start: {cx:60, cy:45},
+        'btn-top':  {cx:80, cy:44}, 'btn-bot': {cx:80, cy:62},
+        'btn-left': {cx:74, cy:53}, 'btn-right':{cx:86, cy:53}
     },
     racing: {
         'steer-left': {cx:22, cy:50}, 'steer-right':{cx:78, cy:50},
@@ -796,8 +811,9 @@ var defaultLayouts = {
         nitrous:{cx:50,cy:82}, cam:{cx:50,cy:16},
         lstick:{cx:30,cy:62}, rstick:{cx:70,cy:62},
         dpad:{cx:22,cy:78}, l3:{cx:22,cy:85}, r3:{cx:78,cy:85},
-        'btn-top':  {cx:82, cy:42}, 'btn-bot': {cx:82, cy:62},
-        'btn-left': {cx:71, cy:52}, 'btn-right':{cx:93, cy:52}
+        select:   {cx:40, cy:82}, start: {cx:60, cy:82},
+        'btn-top':  {cx:82, cy:44}, 'btn-bot': {cx:82, cy:62},
+        'btn-left': {cx:74, cy:53}, 'btn-right':{cx:86, cy:53}
     }
 };
 
@@ -904,12 +920,12 @@ function applyLayout(data) {
 
 function loadAndApplyLayout() {
     // Clear legacy layout cache to force the new PS/Xbox distinct layouts
-    var versionKey = localStorage.getItem('gb_version_1.1');
+    var versionKey = localStorage.getItem('gb_version_1.2_layout');
     if (!versionKey) {
         localStorage.removeItem('gb_layout_ps');
         localStorage.removeItem('gb_layout_xbox');
         localStorage.removeItem('gb_layout_generic');
-        localStorage.setItem('gb_version_1.1', 'true');
+        localStorage.setItem('gb_version_1.2_layout', 'true');
     }
 
     var saved = localStorage.getItem('gb_layout_' + currentType);
@@ -1089,12 +1105,17 @@ function setMode(mode) {
         document.getElementById('hud-title').textContent = 'Modo Prueba';
         testCtrl.style.display = 'flex'; editCtrl.style.display = 'none';
         if (backBtn) backBtn.style.display = 'flex';
+        document.getElementById('ui-btn-connect').style.display = 'flex';
     } else if (mode === 'edit') {
         document.getElementById('hud-title').textContent = 'Editor HUD';
         testCtrl.style.display = 'none'; editCtrl.style.display = 'flex';
         if (backBtn) backBtn.style.display = 'none';
     } else if (mode === 'play') {
-        if (backBtn) backBtn.style.display = 'none';
+        if (backBtn) backBtn.style.display = 'flex'; // Mantener flecha de volver en Play
+        document.getElementById('ui-btn-connect').style.display = 'none'; // Ocultar boton conectar
+        var dt = document.querySelector('#hud-status .dot');
+        if (dt) { dt.style.backgroundColor = '#55ff55'; dt.style.boxShadow = '0 0 8px #55ff55'; }
+        document.getElementById('hud-title').textContent = 'Conectado';
     }
 }
 
@@ -1395,6 +1416,9 @@ function startControllerLoop() {
             btn_l3: document.querySelector('#lbl-l3.active') ? 1 : 0,
             btn_r3: document.querySelector('#lbl-r3.active') ? 1 : 0,
             
+            btn_select: document.querySelector('#lbl-select.active') ? 1 : 0,
+            btn_start: document.querySelector('#lbl-start.active') ? 1 : 0,
+            
             dpad: 0,
             lt: 0.0,
             rt: 0.0,
@@ -1439,9 +1463,11 @@ function startControllerLoop() {
         }
         
         var currentJson = JSON.stringify(payload);
-        if (currentJson !== lastJson) {
+        var now = Date.now();
+        if (currentJson !== lastJson || (now - (window.lastKeepaliveTime || 0)) > 500) {
             window.AndroidBridge.enviarEstadoRedLocal(currentJson);
             lastJson = currentJson;
+            window.lastKeepaliveTime = now;
         }
     }, 16); // 60Hz = 16.6ms
 }
