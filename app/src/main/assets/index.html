@@ -1201,6 +1201,7 @@ function makeStick(elId, thumbId) {
         var d  = Math.hypot(dx, dy);
         if (d > MAX) { dx = dx/d*MAX; dy = dy/d*MAX; }
         thumb.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+        if(window.triggerStateUpdate) window.triggerStateUpdate();
     }
     document.addEventListener('touchmove', function(e) {
         if (!active) return;
@@ -1214,6 +1215,7 @@ function makeStick(elId, thumbId) {
                 active = false; tid = null;
                 thumb.classList.remove('pressed');
                 thumb.style.transform = 'translate(0,0)';
+                if(window.triggerStateUpdate) window.triggerStateUpdate();
             }
         }
     });
@@ -1233,14 +1235,19 @@ makeStick('el-rstick', 'thumb-r');
                 e.stopPropagation(); hapticUI(11);
                 btn.classList.add('active');
                 btn.dataset.pressTime = Date.now();
+                if(window.triggerStateUpdate) window.triggerStateUpdate();
             }, { passive:true });
             
             var releaseBtn = function() {
                 var elapsed = Date.now() - (btn.dataset.pressTime || 0);
                 if (elapsed < 60) {
-                    setTimeout(function() { btn.classList.remove('active'); }, 60 - elapsed);
+                    setTimeout(function() { 
+                        btn.classList.remove('active'); 
+                        if(window.triggerStateUpdate) window.triggerStateUpdate(); 
+                    }, 60 - elapsed);
                 } else {
                     btn.classList.remove('active');
+                    if(window.triggerStateUpdate) window.triggerStateUpdate();
                 }
             };
             
@@ -1422,103 +1429,102 @@ window.onBluetoothError = function(code) {
 };
 
 /* ================================================================
-   UDP NETWORK LOOP (envio de inputs al Server a 60Hz)
+   UDP NETWORK LOOP (Envio Asíncrono Basado en Eventos)
 ================================================================ */
-function startControllerLoop() {
-    if (!window.AndroidBridge || !window.AndroidBridge.enviarEstadoRedLocal) return;
+var lastJson = '';
+window.triggerStateUpdate = function() {
+    if (appState !== 'play' || !window.AndroidBridge || !window.AndroidBridge.enviarEstadoRedLocal) return;
     
-    // Solo enviar si cambio algo
-    var lastJson = '';
-
-    setInterval(function() {
-        if (appState !== 'play') return;
+    var payload = {
+        type: currentType,
+        btn_a: document.querySelector('.act-bottom.active') ? 1 : 0,
+        btn_b: document.querySelector('.act-right.active') ? 1 : 0,
+        btn_x: document.querySelector('.act-left.active') ? 1 : 0,
+        btn_y: document.querySelector('.act-top.active') ? 1 : 0,
         
-        var payload = {
-            type: currentType,
-            btn_a: document.querySelector('.act-bottom.active') ? 1 : 0,
-            btn_b: document.querySelector('.act-right.active') ? 1 : 0,
-            btn_x: document.querySelector('.act-left.active') ? 1 : 0,
-            btn_y: document.querySelector('.act-top.active') ? 1 : 0,
-            
-            btn_l1: document.querySelector('#lbl-l1.active') ? 1 : 0,
-            btn_r1: document.querySelector('#lbl-r1.active') ? 1 : 0,
-            btn_l3: document.querySelector('#lbl-l3.active') ? 1 : 0,
-            btn_r3: document.querySelector('#lbl-r3.active') ? 1 : 0,
-            
-            btn_select: document.querySelector('#lbl-select.active') ? 1 : 0,
-            btn_start: document.querySelector('#lbl-start.active') ? 1 : 0,
-            
-            dpad: 0,
-            lt: 0.0,
-            rt: 0.0,
-            ls_x: 0.0,
-            ls_y: 0.0,
-            rs_x: 0.0,
-            rs_y: 0.0
-        };
-
-        // D-Pad mapping (1=U, 2=UR, 3=R, 4=DR, 5=D, 6=DL, 7=L, 8=UL)
-        var dU = document.querySelector('.d-up.active');
-        var dD = document.querySelector('.d-down.active');
-        var dL = document.querySelector('.d-left.active');
-        var dR = document.querySelector('.d-right.active');
+        btn_l1: document.querySelector('#lbl-l1.active') ? 1 : 0,
+        btn_r1: document.querySelector('#lbl-r1.active') ? 1 : 0,
+        btn_l3: document.querySelector('#lbl-l3.active') ? 1 : 0,
+        btn_r3: document.querySelector('#lbl-r3.active') ? 1 : 0,
         
-        if (dU && dR) payload.dpad = 2;
-        else if (dD && dR) payload.dpad = 4;
-        else if (dD && dL) payload.dpad = 6;
-        else if (dU && dL) payload.dpad = 8;
-        else if (dU) payload.dpad = 1;
-        else if (dR) payload.dpad = 3;
-        else if (dD) payload.dpad = 5;
-        else if (dL) payload.dpad = 7;
-
-        // Triggers analog L2 / R2 (0.0 to 1.0)
-        if (document.querySelector('#lbl-l2.active') || document.querySelector('#el-brake .active')) payload.lt = 1.0;
-        if (document.querySelector('#lbl-r2.active') || document.querySelector('#el-gas .active')) payload.rt = 1.0;
-
-        // Racing extras mappings to analog or face buttons as needed
-        if (document.querySelector('#el-steer-left .active')) payload.ls_x = -1.0;
-        if (document.querySelector('#el-steer-right .active')) payload.ls_x = 1.0;
-        if (document.querySelector('#el-gear-up .active')) payload.btn_y = 1;
-        if (document.querySelector('#el-gear-down .active')) payload.btn_a = 1;
-        if (document.querySelector('#el-handbrake .active')) payload.btn_b = 1;
-        if (document.querySelector('#el-nitrous .active')) payload.btn_x = 1;
-        if (document.querySelector('#el-cam .active')) payload.btn_r1 = 1;
+        btn_select: document.querySelector('#lbl-select.active') ? 1 : 0,
+        btn_start: document.querySelector('#lbl-start.active') ? 1 : 0,
         
-        // Sticks parsing (thumb-l, thumb-r positions convert to -1.0 to 1.0)
-        var parseThumb = function(id) {
-            var el = document.getElementById(id);
-            if (el && el.classList.contains('pressed')) {
-                var m = el.style.transform.match(/translate\(([^p]+)px,\s*([^p]+)px\)/);
-                if (m && m.length === 3) {
-                    // MAX distance in analog setup is 36px
-                    var px = Math.max(-36, Math.min(36, parseFloat(m[1])));
-                    var py = Math.max(-36, Math.min(36, parseFloat(m[2])));
-                    return { x: px / 36.0, y: py / 36.0 };
-                }
+        dpad: 0,
+        lt: 0.0,
+        rt: 0.0,
+        ls_x: 0.0,
+        ls_y: 0.0,
+        rs_x: 0.0,
+        rs_y: 0.0
+    };
+
+    // D-Pad mapping
+    var dU = document.querySelector('.d-up.active');
+    var dD = document.querySelector('.d-down.active');
+    var dL = document.querySelector('.d-left.active');
+    var dR = document.querySelector('.d-right.active');
+    
+    if (dU && dR) payload.dpad = 2;
+    else if (dD && dR) payload.dpad = 4;
+    else if (dD && dL) payload.dpad = 6;
+    else if (dU && dL) payload.dpad = 8;
+    else if (dU) payload.dpad = 1;
+    else if (dR) payload.dpad = 3;
+    else if (dD) payload.dpad = 5;
+    else if (dL) payload.dpad = 7;
+
+    if (document.querySelector('#lbl-l2.active') || document.querySelector('#el-brake .active')) payload.lt = 1.0;
+    if (document.querySelector('#lbl-r2.active') || document.querySelector('#el-gas .active')) payload.rt = 1.0;
+
+    if (document.querySelector('#el-steer-left .active')) payload.ls_x = -1.0;
+    if (document.querySelector('#el-steer-right .active')) payload.ls_x = 1.0;
+    if (document.querySelector('#el-gear-up .active')) payload.btn_y = 1;
+    if (document.querySelector('#el-gear-down .active')) payload.btn_a = 1;
+    if (document.querySelector('#el-handbrake .active')) payload.btn_b = 1;
+    if (document.querySelector('#el-nitrous .active')) payload.btn_x = 1;
+    if (document.querySelector('#el-cam .active')) payload.btn_r1 = 1;
+    
+    var parseThumb = function(id) {
+        var el = document.getElementById(id);
+        if (el && el.classList.contains('pressed')) {
+            var m = el.style.transform.match(/translate\(([^p]+)px,\s*([^p]+)px\)/);
+            if (m && m.length === 3) {
+                var px = Math.max(-36, Math.min(36, parseFloat(m[1])));
+                var py = Math.max(-36, Math.min(36, parseFloat(m[2])));
+                return { x: px / 36.0, y: py / 36.0 };
             }
-            return { x: 0.0, y: 0.0 };
-        };
-        
-        var leftStick = parseThumb('thumb-l');
-        payload.ls_x = leftStick.x;
-        payload.ls_y = -leftStick.y; // Invert Y for controller logic (Up is +1.0)
-        
-        var rightStick = parseThumb('thumb-r');
-        payload.rs_x = rightStick.x;
-        payload.rs_y = -rightStick.y;
-        var now = Date.now();
-        if (now - (window.lastKeepaliveTime || 0) > 400) {
-            payload._ts = now; // Fuerza a Kotlin a detectar un JSON distinto y enviar UDP!
         }
-        
-        var currentJson = JSON.stringify(payload);
-        if (currentJson !== lastJson) {
-            window.AndroidBridge.enviarEstadoRedLocal(currentJson);
-            lastJson = currentJson;
-            if (payload._ts) window.lastKeepaliveTime = now;
-        }
-    }, 16); // 60Hz = 16.6ms
+        return { x: 0.0, y: 0.0 };
+    };
+    
+    var leftStick = parseThumb('thumb-l');
+    payload.ls_x = leftStick.x;
+    payload.ls_y = leftStick.y; // Fix: Eliminado signo negativo para compatibilidad del eje
+    
+    var rightStick = parseThumb('thumb-r');
+    payload.rs_x = rightStick.x;
+    payload.rs_y = rightStick.y; // Fix: Eliminado signo negativo
+    
+    var now = Date.now();
+    if (now - (window.lastKeepaliveTime || 0) > 400) {
+        payload._ts = now;
+    }
+    
+    var currentJson = JSON.stringify(payload);
+    if (currentJson !== lastJson) {
+        window.AndroidBridge.enviarEstadoRedLocal(currentJson);
+        lastJson = currentJson;
+        if (payload._ts) window.lastKeepaliveTime = now;
+    }
+};
+
+function startControllerLoop() {
+    // La inyección asíncrona es conducida por eventos visuales.
+    // Solo dejamos un poll esporádico (4Hz) para prevenir timeouts de la conexión inactiva
+    window.controllerLoopId = setInterval(function() {
+        if (appState === 'play') window.triggerStateUpdate();
+    }, 250);
 }
 
 function stopControllerLoop() {
