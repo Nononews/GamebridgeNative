@@ -24,7 +24,7 @@ class AndroidBridge(private val activity: MainActivity, private val hidManager: 
         }
     }
 
-    /** Activate Bluetooth if off, then start HID registration */
+    /** Activate Bluetooth if off, make discoverable, then start HID registration */
     @JavascriptInterface
     fun conectarBluetooth() {
         if (!hidManager.hasPermissions()) {
@@ -33,19 +33,26 @@ class AndroidBridge(private val activity: MainActivity, private val hidManager: 
             }
             return
         }
-        hidManager.start()
-    }
-
-    /** Make device discoverable (300s = 5 min) - called before HID registration
-     *  so the PC can find and initiate the pairing */
-    @JavascriptInterface
-    fun solicitarVisibilidadBluetooth() {
+        
         activity.runOnUiThread {
+            val adapter = BluetoothAdapter.getDefaultAdapter()
+            if (adapter != null && !adapter.isEnabled) {
+                // Pedir que se encienda Bluetooth explícitamente
+                val enableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                activity.startActivity(enableIntent)
+            }
+            
+            // Inmediatamente después, pedir visibilidad obligatoria (activa el "Modo Pairing" virtual)
             val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
-                putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300) // 5 minutes
+                putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             activity.startActivity(discoverableIntent)
+            
+            // Arrancar el motor HID
+            hidManager.start()
         }
     }
 
