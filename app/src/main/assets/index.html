@@ -1423,6 +1423,7 @@ function startControllerLoop() {
         if (appState !== 'play') return;
         
         var payload = {
+            type: currentType,
             btn_a: document.querySelector('.act-bottom.active') ? 1 : 0,
             btn_b: document.querySelector('.act-right.active') ? 1 : 0,
             btn_x: document.querySelector('.act-left.active') ? 1 : 0,
@@ -1474,10 +1475,27 @@ function startControllerLoop() {
         if (document.querySelector('#el-cam .active')) payload.btn_r1 = 1;
         
         // Sticks parsing (thumb-l, thumb-r positions convert to -1.0 to 1.0)
-        var thumbL = document.getElementById('thumb-l');
-        if (thumbL && thumbL.classList.contains('pressed')) {
-            // we'd need exact px parsing here, for now it's raw
-        }
+        var parseThumb = function(id) {
+            var el = document.getElementById(id);
+            if (el && el.classList.contains('pressed')) {
+                var m = el.style.transform.match(/translate\(([^p]+)px,\s*([^p]+)px\)/);
+                if (m && m.length === 3) {
+                    // MAX distance in analog setup is 36px
+                    var px = Math.max(-36, Math.min(36, parseFloat(m[1])));
+                    var py = Math.max(-36, Math.min(36, parseFloat(m[2])));
+                    return { x: px / 36.0, y: py / 36.0 };
+                }
+            }
+            return { x: 0.0, y: 0.0 };
+        };
+        
+        var leftStick = parseThumb('thumb-l');
+        payload.ls_x = leftStick.x;
+        payload.ls_y = -leftStick.y; // Invert Y for controller logic (Up is +1.0)
+        
+        var rightStick = parseThumb('thumb-r');
+        payload.rs_x = rightStick.x;
+        payload.rs_y = -rightStick.y;
         var now = Date.now();
         if (now - (window.lastKeepaliveTime || 0) > 400) {
             payload._ts = now; // Fuerza a Kotlin a detectar un JSON distinto y enviar UDP!

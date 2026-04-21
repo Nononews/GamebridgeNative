@@ -25,7 +25,7 @@ class UdpManager {
                 onConnected(true, null)
             } catch (e: Exception) {
                 targetAddress = null
-                onConnected(false, e.message)
+                onConnected(false, e.toString())
             }
         }.start()
     }
