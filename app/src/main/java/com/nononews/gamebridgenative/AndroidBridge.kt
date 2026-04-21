@@ -27,7 +27,12 @@ class AndroidBridge(private val activity: MainActivity, private val hidManager: 
     /** Activate Bluetooth if off, then start HID registration */
     @JavascriptInterface
     fun conectarBluetooth() {
-        if (!hidManager.hasPermissions()) return
+        if (!hidManager.hasPermissions()) {
+            activity.runOnUiThread {
+                activity.webView.evaluateJavascript("window.onBluetoothError && window.onBluetoothError('NO_PERMISSIONS_GRANTED')", null)
+            }
+            return
+        }
         hidManager.start()
     }
 
@@ -47,6 +52,12 @@ class AndroidBridge(private val activity: MainActivity, private val hidManager: 
     /** Start scanning for nearby Bluetooth devices */
     @JavascriptInterface
     fun iniciarEscaneo() {
+        if (!hidManager.hasPermissions()) {
+            activity.runOnUiThread {
+                activity.webView.evaluateJavascript("window.onBluetoothError && window.onBluetoothError('NO_PERMISSIONS_GRANTED')", null)
+            }
+            return
+        }
         hidManager.startDiscovery()
     }
 
@@ -79,10 +90,25 @@ class AndroidBridge(private val activity: MainActivity, private val hidManager: 
         }
     }
 
-    /** Send binary structs directly to PC via Coroutines */
+    /** Send binary structs directly to PC via Coroutines (And Bluetooth HID simultaneously) */
     @JavascriptInterface
     fun enviarUDPBinario(tipo: Int, btnBitmask: Int, dpad: Int, lt: Float, rt: Float, lsX: Float, lsY: Float, rsX: Float, rsY: Float) {
+        // Send via Wi-Fi UDP
         udpManager.sendBinary(tipo, btnBitmask, dpad, lt, rt, lsX, lsY, rsX, rsY)
+        
+        // Send via Protocolo Bluetooth Nativo si esta conectado
+        if (hidManager.isConnected) {
+            val report = ByteArray(6)
+            report[0] = (btnBitmask and 0xFF).toByte()
+            report[1] = ((btnBitmask shr 8) and 0xFF).toByte()
+            // Map analog float axes (-1.0 to 1.0) to raw byte bounds (0 to 255)
+            // Default center is 128
+            report[2] = ((lsX + 1.0f) * 127.5f).toInt().coerceIn(0, 255).toByte()
+            report[3] = ((lsY + 1.0f) * 127.5f).toInt().coerceIn(0, 255).toByte()
+            report[4] = ((rsX + 1.0f) * 127.5f).toInt().coerceIn(0, 255).toByte()
+            report[5] = ((rsY + 1.0f) * 127.5f).toInt().coerceIn(0, 255).toByte()
+            hidManager.sendReport(report)
+        }
     }
 
     /** Send JSON state to PC Server via UDP for Wi-Fi Mode */
