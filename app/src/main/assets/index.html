@@ -1232,9 +1232,20 @@ makeStick('el-rstick', 'thumb-r');
                 if (appState === 'edit') return;
                 e.stopPropagation(); hapticUI(11);
                 btn.classList.add('active');
+                btn.dataset.pressTime = Date.now();
             }, { passive:true });
-            btn.addEventListener('touchend',    function() { btn.classList.remove('active'); });
-            btn.addEventListener('touchcancel', function() { btn.classList.remove('active'); });
+            
+            var releaseBtn = function() {
+                var elapsed = Date.now() - (btn.dataset.pressTime || 0);
+                if (elapsed < 60) {
+                    setTimeout(function() { btn.classList.remove('active'); }, 60 - elapsed);
+                } else {
+                    btn.classList.remove('active');
+                }
+            };
+            
+            btn.addEventListener('touchend',    releaseBtn);
+            btn.addEventListener('touchcancel', releaseBtn);
         })(btns[i]);
     }
 })();
