@@ -79,6 +79,12 @@ class AndroidBridge(private val activity: MainActivity, private val hidManager: 
         }
     }
 
+    /** Send binary structs directly to PC via Coroutines */
+    @JavascriptInterface
+    fun enviarUDPBinario(tipo: Int, btnBitmask: Int, dpad: Int, lt: Float, rt: Float, lsX: Float, lsY: Float, rsX: Float, rsY: Float) {
+        udpManager.sendBinary(tipo, btnBitmask, dpad, lt, rt, lsX, lsY, rsX, rsY)
+    }
+
     /** Send JSON state to PC Server via UDP for Wi-Fi Mode */
     @JavascriptInterface
     fun enviarEstadoRedLocal(jsonPayload: String) {
