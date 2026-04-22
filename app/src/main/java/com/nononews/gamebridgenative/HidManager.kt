@@ -7,10 +7,7 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothHidDevice
 import android.bluetooth.BluetoothHidDeviceAppSdpSettings
 import android.bluetooth.BluetoothProfile
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
@@ -24,16 +21,13 @@ class HidManager(private val context: Context, private val webView: WebView) {
     private var hidDevice: BluetoothHidDevice? = null
     var connectedHost: BluetoothDevice? = null
         private set
-    private var targetDevice: BluetoothDevice? = null  // device we want to connect to
 
-    // Device profile: "ps", "xbox", "generic", "racing"
     var currentProfile: String = "xbox"
     private var deviceName: String = "Xbox Wireless Controller"
 
     val isConnected: Boolean
         get() = connectedHost != null && hidDevice != null
 
-    // HID Descriptor: Standard gamepad (16 buttons + 4 axes)
     private val HID_DESCRIPTOR = byteArrayOf(
         0x05.toByte(), 0x01.toByte(),
         0x09.toByte(), 0x05.toByte(),
@@ -60,27 +54,6 @@ class HidManager(private val context: Context, private val webView: WebView) {
         0xc0.toByte()
     )
 
-    // BroadcastReceiver to catch discovered Bluetooth devices
-    private val discoveryReceiver = object : BroadcastReceiver() {
-        @SuppressLint("MissingPermission")
-        override fun onReceive(ctx: Context, intent: Intent) {
-            when (intent.action) {
-                BluetoothDevice.ACTION_FOUND -> {
-                    val device: BluetoothDevice? =
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                            intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
-                        else
-                            @Suppress("DEPRECATION") intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
-
-                    device?.let { sendDeviceToJS(it) }
-                }
-                BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
-                    notifyJS("window.onBluetoothScanFinished && window.onBluetoothScanFinished()")
-                }
-            }
-        }
-    }
-
     fun setProfile(type: String) {
         currentProfile = type
         deviceName = when (type) {
@@ -90,34 +63,27 @@ class HidManager(private val context: Context, private val webView: WebView) {
             "racing"  -> "GameBridge Wheel"
             else      -> "GameBridge Controller"
         }
-        // Rename the Bluetooth adapter so the PC discovers it with the right name
         try {
             val adapter = BluetoothAdapter.getDefaultAdapter()
             @SuppressLint("MissingPermission")
             if (adapter != null) {
                 adapter.name = deviceName
-                Log.i(TAG, "BT adapter renamed to: $deviceName")
+                Log.i(TAG, "BT adapter renamed to: \$deviceName")
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "Could not rename adapter: ${e.message}")
-        }
-    }
-
-    fun hasPermissions(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_ADVERTISE) == PackageManager.PERMISSION_GRANTED
-        } else {
-            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED
-        }
+        } catch (e: Exception) {}
     }
 
     @SuppressLint("MissingPermission")
     fun start() {
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if (bluetoothAdapter == null || !bluetoothAdapter!!.isEnabled) {
-            Log.e(TAG, "Bluetooth no disponible o desactivado")
             notifyJS("window.onBluetoothError && window.onBluetoothError('BT_DISABLED')")
+            return
+        }
+
+        // Si ya está escuchando, no volver a iniciar
+        if (hidDevice != null) {
+            registerApp()
             return
         }
 
@@ -137,67 +103,6 @@ class HidManager(private val context: Context, private val webView: WebView) {
     }
 
     @SuppressLint("MissingPermission")
-    fun startDiscovery() {
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-        if (bluetoothAdapter == null || !bluetoothAdapter!!.isEnabled) {
-            notifyJS("window.onBluetoothError && window.onBluetoothError('BT_DISABLED')")
-            return
-        }
-
-        // Register receiver
-        val filter = IntentFilter().apply {
-            addAction(BluetoothDevice.ACTION_FOUND)
-            addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
-        }
-        try { context.unregisterReceiver(discoveryReceiver) } catch (_: Exception) {}
-        context.registerReceiver(discoveryReceiver, filter)
-
-        if (bluetoothAdapter!!.isDiscovering) bluetoothAdapter!!.cancelDiscovery()
-        bluetoothAdapter!!.startDiscovery()
-        Log.i(TAG, "Discovery started")
-    }
-
-    @SuppressLint("MissingPermission")
-    fun stopDiscovery() {
-        bluetoothAdapter?.cancelDiscovery()
-        try { context.unregisterReceiver(discoveryReceiver) } catch (_: Exception) {}
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun sendDeviceToJS(device: BluetoothDevice) {
-        val name = try { device.name ?: "Unknown" } catch (_: Exception) { "Unknown" }
-        val address = device.address ?: ""
-        val deviceClass = device.bluetoothClass?.majorDeviceClass ?: -1
-
-        // BluetoothClass.Device.Major.COMPUTER = 0x0100
-        val isComputer = deviceClass == 0x0100
-
-        val jsCode = "window.onDeviceFound && window.onDeviceFound(${escapeJS(name)}, '${address}', ${isComputer})"
-        notifyJS(jsCode)
-    }
-
-    @SuppressLint("MissingPermission")
-    fun connectToDevice(address: String) {
-        val device = try { bluetoothAdapter?.getRemoteDevice(address) } catch (_: Exception) { null }
-        if (device == null) {
-            notifyJS("window.onBluetoothError && window.onBluetoothError('DEVICE_NOT_FOUND')")
-            return
-        }
-        stopDiscovery()
-        targetDevice = device  // store so we can connect after HID app registers
-
-        // If HID already registered, connect immediately
-        if (hidDevice != null) {
-            hidDevice!!.connect(device)
-        } else {
-            // Start HID stack; connection will be initiated from onAppStatusChanged
-            start()
-        }
-        // Notify JS that we're attempting
-        notifyJS("window.onDeviceConnecting && window.onDeviceConnecting(${escapeJS(device.name ?: address)})")
-    }
-
-    @SuppressLint("MissingPermission")
     private fun registerApp() {
         hidDevice?.let { device ->
             val sdp = BluetoothHidDeviceAppSdpSettings(
@@ -210,29 +115,21 @@ class HidManager(private val context: Context, private val webView: WebView) {
 
             device.registerApp(sdp, null, null, Executors.newSingleThreadExecutor(), object : BluetoothHidDevice.Callback() {
                 override fun onAppStatusChanged(pluggedDevice: BluetoothDevice?, registered: Boolean) {
-                    Log.i(TAG, "App Status Changed. Registered: $registered, target: ${targetDevice?.address}")
+                    Log.i(TAG, "App Status Changed. Registered: \$registered")
                     if (registered) {
                         notifyJS("window.onHidRegistered && window.onHidRegistered()")
-                        // Initiate outgoing connection to the target PC
-                        targetDevice?.let { td ->
-                            try {
-                                val connected = hidDevice?.connect(td)
-                                Log.i(TAG, "HID connect() to ${td.address} result: $connected")
-                            } catch (e: Exception) {
-                                Log.e(TAG, "connect() failed: ${e.message}")
-                                notifyJS("window.onBluetoothError && window.onBluetoothError('CONNECT_FAILED')")
-                            }
-                        }
+                        // NOTA CLAVE: Ya NO forzamos una conexión saliente (hidDevice.connect).
+                        // Ahora esperamos pacientemente como un Periférico a que el PC se conecte a nosotros.
                     }
                 }
 
                 override fun onConnectionStateChanged(device: BluetoothDevice, state: Int) {
-                    Log.i(TAG, "Connection State Changed: $state for ${device.name}")
+                    Log.i(TAG, "Connection State Changed: \$state for \${device.name}")
                     when (state) {
                         BluetoothProfile.STATE_CONNECTED -> {
                             connectedHost = device
                             val name = try { device.name ?: "PC" } catch (_: Exception) { "PC" }
-                            notifyJS("window.onDeviceConnected && window.onDeviceConnected(${escapeJS(name)})")
+                            notifyJS("window.onBluetoothConnected && window.onBluetoothConnected(\${escapeJS(name)})")
                         }
                         BluetoothProfile.STATE_DISCONNECTED -> {
                             connectedHost = null
@@ -251,16 +148,19 @@ class HidManager(private val context: Context, private val webView: WebView) {
         }
     }
 
+    @SuppressLint("MissingPermission")
     fun cleanup() {
-        try { context.unregisterReceiver(discoveryReceiver) } catch (_: Exception) {}
-        bluetoothAdapter?.cancelDiscovery()
+        hidDevice?.let {
+            it.unregisterApp()
+            bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HID_DEVICE, it)
+        }
+        hidDevice = null
+        connectedHost = null
     }
 
     private fun notifyJS(jsCode: String) {
-        webView.post {
-            webView.evaluateJavascript(jsCode, null)
-        }
+        webView.post { webView.evaluateJavascript(jsCode, null) }
     }
 
-    private fun escapeJS(s: String): String = "'${s.replace("'", "\\'")}'"
+    private fun escapeJS(s: String): String = "'\${s.replace("'", "\\'")}'"
 }
