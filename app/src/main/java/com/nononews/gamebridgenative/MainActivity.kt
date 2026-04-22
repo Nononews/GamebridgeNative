@@ -3,24 +3,20 @@ package com.nononews.gamebridgenative
 import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.webkit.WebSettings
 import android.webkit.WebView
-import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.activity.OnBackPressedCallback
 
 class MainActivity : AppCompatActivity() {
 
@@ -32,27 +28,11 @@ class MainActivity : AppCompatActivity() {
         const val REQUEST_ENABLE_BT = 101
     }
 
-    // El vigilante para los 120 segundos
-    private val discoverabilityReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == BluetoothAdapter.ACTION_SCAN_MODE_CHANGED) {
-                val mode = intent.getIntExtra(BluetoothAdapter.EXTRA_SCAN_MODE, BluetoothAdapter.ERROR)
-                // Si el modo descubrible termina y seguimos desconectados
-                if (mode != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
-                    if (!hidManager.isConnected) {
-                        Log.i("GamepadHID", "Visibilidad agotada. No hubo conexión.")
-                        runOnUiThread {
-                            webView.evaluateJavascript("if(window.onBluetoothFailure) window.onBluetoothFailure();", null)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Start portrait by default
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
 
         webView = WebView(this)
@@ -71,9 +51,12 @@ class MainActivity : AppCompatActivity() {
         // Manejo del gesto "Atras" nativo de Android
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                // Inyectar JS para que Frontend decida si debe cerrar la App o retroceder
                 webView.evaluateJavascript("""
                     (function() {
-                        if(window.onNativeBackPressed) return window.onNativeBackPressed();
+                        if(window.onNativeBackPressed) {
+                            return window.onNativeBackPressed();
+                        }
                         return "CLOSE_APP";
                     })();
                 """) { result ->
@@ -83,10 +66,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         })
-        
-        // Registrar el escuchador de visibilidad
-        val filter = IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED)
-        registerReceiver(discoverabilityReceiver, filter)
+        // Permissions requested when user picks a joystick (via AndroidBridge.setConfig)
     }
 
     fun setOrientation(landscape: Boolean) {
@@ -102,30 +82,13 @@ class MainActivity : AppCompatActivity() {
             val missing = perms.filter { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
             if (missing.isNotEmpty()) {
                 ActivityCompat.requestPermissions(this, missing.toTypedArray(), REQUEST_PERMISSIONS)
-            } else {
-                startDiscoverableMode()
             }
         } else {
             val perms = arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.ACCESS_FINE_LOCATION)
             val missing = perms.filter { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
             if (missing.isNotEmpty()) {
                 ActivityCompat.requestPermissions(this, missing.toTypedArray(), REQUEST_PERMISSIONS)
-            } else {
-                startDiscoverableMode()
             }
-        }
-    }
-
-    private fun startDiscoverableMode() {
-        runOnUiThread {
-            // Activar Perfil Bluetooth para estar listos a recibir conexión
-            hidManager.start()
-            
-            val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
-                putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            startActivity(discoverableIntent)
         }
     }
 
@@ -134,13 +97,20 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == REQUEST_PERMISSIONS) {
             val allGranted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
             if (allGranted) {
-                startDiscoverableMode()
-            } else {
-                 runOnUiThread {
-                    webView.evaluateJavascript("if(window.onBluetoothError) window.onBluetoothError('PERMISOS_DENEGADOS');", null)
+                // Activar Emparejamiento obligatorio si recién dimos permisos
+                runOnUiThread {
+                    val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
+                        putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(discoverableIntent)
                 }
             }
         }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     private fun hideSystemUI() {
@@ -164,6 +134,5 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         hidManager.cleanup()
-        try { unregisterReceiver(discoverabilityReceiver) } catch (e: Exception) {}
     }
 }
