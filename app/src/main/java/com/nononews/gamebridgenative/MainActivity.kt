@@ -16,6 +16,7 @@ import android.webkit.WebView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.activity.OnBackPressedCallback
 
 class MainActivity : AppCompatActivity() {
 
@@ -46,6 +47,25 @@ class MainActivity : AppCompatActivity() {
 
         webView.addJavascriptInterface(AndroidBridge(this, hidManager), "AndroidBridge")
         webView.loadUrl("file:///android_asset/index.html")
+        
+        // Manejo del gesto "Atras" nativo de Android
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                // Inyectar JS para que Frontend decida si debe cerrar la App o retroceder
+                webView.evaluateJavascript("""
+                    (function() {
+                        if(window.onNativeBackPressed) {
+                            return window.onNativeBackPressed();
+                        }
+                        return "CLOSE_APP";
+                    })();
+                """) { result ->
+                    if (result == "\"CLOSE_APP\"") {
+                        finish()
+                    }
+                }
+            }
+        })
         // Permissions requested when user picks a joystick (via AndroidBridge.setConfig)
     }
 
@@ -74,6 +94,19 @@ class MainActivity : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_PERMISSIONS) {
+            val allGranted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            if (allGranted) {
+                // Activar Emparejamiento obligatorio si recién dimos permisos
+                runOnUiThread {
+                    val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
+                        putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(discoverableIntent)
+                }
+            }
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

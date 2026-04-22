@@ -60,6 +60,19 @@
             background: radial-gradient(circle at center, rgba(17,22,37,0.8) 0%, var(--bg-dark) 100%);
             overflow-y: auto;
         }
+        
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 102, 0.4); border-color: #00ff66; }
+            70% { box-shadow: 0 0 0 10px rgba(0, 255, 102, 0); border-color: rgba(0, 255, 102, 0.5); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 102, 0); border-color: rgba(0, 255, 102, 0.2); }
+        }
+        @keyframes pulse-blue {
+            0% { box-shadow: 0 0 0 0 rgba(0, 136, 255, 0.4); border-color: #0088ff; }
+            70% { box-shadow: 0 0 0 10px rgba(0, 136, 255, 0); border-color: rgba(0, 136, 255, 0.5); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 136, 255, 0); border-color: rgba(0, 136, 255, 0.2); }
+        }
+        .anim-pulse-green { animation: pulse-green 1.5s infinite; }
+        .anim-pulse-blue { animation: pulse-blue 1.5s infinite; }
 
         .header-title {
             font-size: 2.5rem; font-weight: 900; text-transform: uppercase;
@@ -1345,10 +1358,72 @@ window.onNetworkError = function(err) {
 };
 
 /* --- Mocks/Placeholders vacíos --- */
-function showPeripheralPanel() {}
+function showPeripheralPanel() {
+    document.getElementById('scan-list-panel').style.display = 'none';
+    document.getElementById('pair-peripheral-panel').style.display = 'flex';
+}
 function connectDevice(address, name) {}
-function startBluetoothScan() {}
+function startBluetoothScan() {
+    hapticUI(30);
+    var badge = document.getElementById('scan-badge');
+    if(badge) {
+        if(currentType === 'ps') badge.classList.add('anim-pulse-blue');
+        else badge.classList.add('anim-pulse-green');
+    }
+    document.getElementById('scan-computers').innerHTML = '<div class="scan-empty">Buscando dispositivos cercanos...</div>';
+    if(window.AndroidBridge && window.AndroidBridge.iniciarEscaneo) {
+        window.AndroidBridge.iniciarEscaneo();
+    }
+}
 function showReconnectScanner() {}
+
+/* Regresar desde sub-pantallas a Seleccion Principal */
+function goBackToSelection() {
+    hapticUI(20);
+    if(window.AndroidBridge && window.AndroidBridge.detenerEscaneo) {
+        window.AndroidBridge.detenerEscaneo();
+    }
+    
+    // Detener polling de Wi-Fi si existe
+    if (connTimeoutId) { clearTimeout(connTimeoutId); connTimeoutId = null; }
+    
+    // Restablecer panels
+    var plList = document.getElementById('scan-list-panel');
+    var plPai = document.getElementById('pair-peripheral-panel');
+    if(plList) plList.style.display = 'none';
+    if(plPai) plPai.style.display = 'flex';
+    
+    var errBox = document.getElementById('conn-error-box');
+    var connSpin = document.getElementById('conn-spinner');
+    var paiInfo = document.getElementById('pair-info');
+    if(errBox) errBox.style.display = 'none';
+    if(connSpin) connSpin.style.display = 'block';
+    if(paiInfo) paiInfo.style.display = 'flex';
+    
+    var badge = document.getElementById('scan-badge');
+    if(badge) badge.classList.remove('anim-pulse-green', 'anim-pulse-blue');
+
+    showScreen('screen-selection');
+}
+
+/* API para que Kotlin capture el gesto Back Swipe Nativo */
+window.onNativeBackPressed = function() {
+    var screens = document.querySelectorAll('.screen');
+    var activeId = '';
+    screens.forEach(function(s) { 
+        if (s.classList.contains('active')) activeId = s.id; 
+    });
+    
+    if (activeId === 'screen-selection') {
+        return "CLOSE_APP"; // Indicador para que Kotlin cierre la App.
+    } else if (activeId === 'screen-gamepad' && appState === 'edit') {
+        exitEditMode();
+        return "HANDLED";
+    } else {
+        goBackToSelection();
+        return "HANDLED";
+    }
+}
 var lastConnectedAddress = null;
 var lastConnectedName = null;
 
