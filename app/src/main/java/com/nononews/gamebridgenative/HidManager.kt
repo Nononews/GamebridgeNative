@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothHidDevice
+import android.bluetooth.BluetoothHidDeviceAppQosSettings
 import android.bluetooth.BluetoothHidDeviceAppSdpSettings
 import android.bluetooth.BluetoothProfile
 import android.content.BroadcastReceiver
@@ -193,11 +194,28 @@ class HidManager(private val context: Context, private val webView: WebView) {
                 HID_DESCRIPTOR
             )
 
-            device.registerApp(sdp, null, null, Executors.newSingleThreadExecutor(), object : BluetoothHidDevice.Callback() {
+            // QoS (L2CAP) configuration for low-latency input
+            val inQos = BluetoothHidDeviceAppQosSettings(
+                BluetoothHidDeviceAppQosSettings.SERVICE_BEST_EFFORT,
+                800, 9, 0, 11250, BluetoothHidDeviceAppQosSettings.MAX
+            )
+            val outQos = BluetoothHidDeviceAppQosSettings(
+                BluetoothHidDeviceAppQosSettings.SERVICE_BEST_EFFORT,
+                800, 9, 0, 11250, BluetoothHidDeviceAppQosSettings.MAX
+            )
+
+            device.registerApp(sdp, inQos, outQos, Executors.newSingleThreadExecutor(), object : BluetoothHidDevice.Callback() {
                 override fun onAppStatusChanged(pluggedDevice: BluetoothDevice?, registered: Boolean) {
-                    Log.i(TAG, "App Status Changed. Registered: $registered")
+                    Log.i(TAG, "Bluetooth HID Profile Status: Registered=$registered | Dispositivo listo para ser hosteado.")
                     if (registered) {
                         notifyJS("window.onHidRegistered && window.onHidRegistered()")
+                        
+                        // Solo cuando el SDP está registrado exitosamente, habilitamos la visibilidad (Pairing Mode)
+                        val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
+                            putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(discoverableIntent)
                     }
                 }
 

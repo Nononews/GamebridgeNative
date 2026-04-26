@@ -97,13 +97,9 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == REQUEST_PERMISSIONS) {
             val allGranted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
             if (allGranted) {
-                // Activar Emparejamiento obligatorio si recién dimos permisos
+                // Iniciar motor HID, el cual pedirá visibilidad una vez registrado el perfil
                 runOnUiThread {
-                    val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
-                        putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    startActivity(discoverableIntent)
+                    hidManager.start()
                 }
             }
         }
