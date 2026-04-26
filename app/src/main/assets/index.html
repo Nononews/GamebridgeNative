@@ -705,7 +705,7 @@
         <div id="pair-status-msg" style="font-size:0.82rem;color:var(--text-muted);">Listo para conectar...</div>
 
         <!-- Botones -->
-        <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;" id="wifi-action-btns">
             <button class="btn btn-primary" id="pair-start-btn" onclick="startWifiConnection()" style="font-size:0.9rem;padding:10px 24px;">&#128268; Conectar Wi-Fi</button>
             <button class="btn btn-secondary" onclick="startPassiveBluetooth()" style="font-size:0.9rem;padding:10px 24px;background:#0088ff;border-color:#0088ff;">&#128241; Bluetooth Nativo</button>
         </div>
@@ -1292,6 +1292,11 @@ function connectToPC() {
 
 function startWifiConnection() {
     hapticUI(28);
+    var errorBox = document.getElementById('wifi-error-box');
+    if (errorBox) errorBox.style.display = 'none';
+    var actionBtns = document.getElementById('wifi-action-btns');
+    if (actionBtns) actionBtns.style.display = 'flex';
+    
     var ip = document.getElementById('pc-ip-input').value.trim();
     if (!ip || !ip.match(/^\d{1,3}(\.\d{1,3}){3}$/)) {
         document.getElementById('ip-error-msg').style.display = 'block';
@@ -1361,9 +1366,35 @@ window.onNetworkConnected = function(ip) {
 };
 
 window.onNetworkError = function(err) {
-    document.getElementById('pair-status-msg').textContent = 'Error: ' + err;
     document.getElementById('scan-dot').classList.remove('on');
-    document.getElementById('pair-start-btn').textContent = 'Reintentar';
+    var startBtn = document.getElementById('pair-start-btn');
+    if (startBtn) startBtn.innerHTML = '&#128268; Conectar Wi-Fi';
+    document.getElementById('pair-status-msg').textContent = '';
+
+    var errorBox = document.getElementById('wifi-error-box');
+    if (!errorBox) {
+        errorBox = document.createElement('div');
+        errorBox.id = 'wifi-error-box';
+        errorBox.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:8px;';
+        
+        var htmlContent = '';
+        htmlContent += '<div style="background:rgba(255,50,50,0.1);border:1px solid rgba(255,80,80,0.3);border-radius:12px;padding:14px 20px;color:#ff8080;font-size:0.84rem;text-align:center;max-width:280px;">';
+        htmlContent += '&#9888; No se encontr&oacute; un PC en la red. Verifica que la direcci&oacute;n IP sea correcta y que el servidor GameBridge est&eacute; ejecut&aacute;ndose en tu computadora.';
+        htmlContent += '</div>';
+        htmlContent += '<div style="display:flex;gap:12px;">';
+        htmlContent += '<button class="btn btn-primary" onclick="startWifiConnection()" style="font-size:0.85rem;">&#8635; Reintentar</button>';
+        htmlContent += '<button class="btn btn-outline" onclick="document.getElementById(\'wifi-error-box\').style.display=\'none\'; document.getElementById(\'wifi-action-btns\').style.display=\'flex\';" style="font-size:0.85rem;">Verificar IP</button>';
+        htmlContent += '</div>';
+        
+        errorBox.innerHTML = htmlContent;
+        var panel = document.getElementById('pair-peripheral-panel');
+        var btns = document.getElementById('wifi-action-btns');
+        if (panel && btns) panel.insertBefore(errorBox, btns);
+    }
+    if (errorBox) errorBox.style.display = 'flex';
+    var actionBtns = document.getElementById('wifi-action-btns');
+    if (actionBtns) actionBtns.style.display = 'none';
+    hapticUI([40, 80, 40]);
 };
 
 /* --- Mocks/Placeholders vacíos --- */
@@ -1449,6 +1480,11 @@ function startPassiveBluetooth() {
     document.getElementById('pair-info').style.display = 'block';
     var cancelBtn = document.getElementById('conn-cancel-btn');
     if (cancelBtn) cancelBtn.style.display = 'inline-block';
+    
+    var namesMap = { ps: 'Wireless Controller', xbox: 'Xbox Wireless Controller', generic: 'GameBridge Controller', racing: 'GameBridge Wheel' };
+    var hidName = namesMap[currentType] || 'GameBridge Controller';
+    var pairDisplay = document.getElementById('pair-device-name-display');
+    if (pairDisplay) pairDisplay.textContent = hidName;
     
     if (window.AndroidBridge && window.AndroidBridge.conectarBluetooth) {
         window.AndroidBridge.conectarBluetooth();
