@@ -707,7 +707,7 @@
         <!-- Botones -->
         <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
             <button class="btn btn-primary" id="pair-start-btn" onclick="startWifiConnection()" style="font-size:0.9rem;padding:10px 24px;">&#128268; Conectar Wi-Fi</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('pair-peripheral-panel').style.display='none'; document.getElementById('scan-list-panel').style.display='flex';" style="font-size:0.9rem;padding:10px 24px;background:#0088ff;border-color:#0088ff;">&#128241; Bluetooth Nativo</button>
+            <button class="btn btn-secondary" onclick="startPassiveBluetooth()" style="font-size:0.9rem;padding:10px 24px;background:#0088ff;border-color:#0088ff;">&#128241; Bluetooth Nativo</button>
         </div>
         <button class="btn btn-outline" onclick="goBackToSelection()" style="font-size:0.81rem;opacity:0.7;margin-top:8px;">Cancelar</button>
     </div>
@@ -741,7 +741,7 @@
         <ol>
             <li>Abre <b>Configuraci&oacute;n &rarr; Bluetooth</b> en tu PC</li>
             <li>Pulsa <b>"Agregar dispositivo"</b></li>
-            <li>Busca <b id="pair-device-name">Xbox Wireless Controller</b></li>
+            <li>Busca <b id="pair-device-name-display">Xbox Wireless Controller</b></li>
             <li>Haz clic en el dispositivo y confirma si te pide c&oacute;digo</li>
         </ol>
     </div>
@@ -753,7 +753,7 @@
         </div>
         <div style="display:flex;gap:12px;">
             <button class="btn btn-primary" onclick="retryConnect()" style="font-size:0.85rem;">&#8635; Reintentar</button>
-            <button class="btn btn-outline" onclick="goBackToSelection()" style="font-size:0.85rem;">Cancelar</button>
+            <button class="btn btn-outline" onclick="goBackToSelection()" style="font-size:0.85rem;">Probar otro m&eacute;todo</button>
         </div>
     </div>
 
@@ -1306,6 +1306,12 @@ function startWifiConnection() {
     document.getElementById('scan-dot').classList.add('on');
     document.getElementById('pair-start-btn').textContent  = 'Conectando...';
 
+    // Manejo de timeout para Wi-Fi
+    if (typeof connTimeoutId !== 'undefined' && connTimeoutId) clearTimeout(connTimeoutId);
+    connTimeoutId = setTimeout(function() {
+        window.onNetworkError('Tiempo de conexión agotado (10s)');
+    }, 10000);
+
     if (window.AndroidBridge && window.AndroidBridge.conectarRedLocal) {
         window.AndroidBridge.conectarRedLocal(ip);
     } else {
@@ -1317,6 +1323,7 @@ function startWifiConnection() {
 }
 
 window.onNetworkConnected = function(ip) {
+    if (typeof connTimeoutId !== 'undefined' && connTimeoutId) { clearTimeout(connTimeoutId); connTimeoutId = null; }
     document.getElementById('pair-status-msg').textContent = '¡Conectado! Preparando control...';
     window.currentPcIp = ip;
     // Esperar un segundito y cargar
@@ -1337,6 +1344,8 @@ window.onNetworkConnected = function(ip) {
                 // Si el PC dice que ya no estamos conectados porque no llegaron UDPs:
                 if (d && d.connected === false) {
                     window.onDeviceDisconnected();
+                } else if (d && typeof d.slot !== 'undefined') {
+                    document.getElementById('hud-title').textContent = 'P' + d.slot + ' - Conectado';
                 }
             })
             .catch(function(e) {
@@ -1384,8 +1393,10 @@ function goBackToSelection() {
         window.AndroidBridge.detenerEscaneo();
     }
     
-    // Detener polling de Wi-Fi si existe
-    if (connTimeoutId) { clearTimeout(connTimeoutId); connTimeoutId = null; }
+    // Detener polling y loops activos
+    if (typeof connTimeoutId !== 'undefined' && connTimeoutId) { clearTimeout(connTimeoutId); connTimeoutId = null; }
+    if (window.healthPollId) { clearInterval(window.healthPollId); window.healthPollId = null; }
+    if (typeof stopControllerLoop === 'function') stopControllerLoop();
     
     // Restablecer panels
     var plList = document.getElementById('scan-list-panel');
@@ -1426,6 +1437,41 @@ window.onNativeBackPressed = function() {
 }
 var lastConnectedAddress = null;
 var lastConnectedName = null;
+var connTimeoutId = null;
+
+function startPassiveBluetooth() {
+    hapticUI(30);
+    showScreen('screen-connecting');
+    document.getElementById('conn-title').textContent = 'Modo Emparejamiento';
+    document.getElementById('conn-sub').textContent = 'Visible por 120 segundos';
+    document.getElementById('conn-error-box').style.display = 'none';
+    document.getElementById('conn-spinner').style.display = 'block';
+    document.getElementById('pair-info').style.display = 'block';
+    var cancelBtn = document.getElementById('conn-cancel-btn');
+    if (cancelBtn) cancelBtn.style.display = 'inline-block';
+    
+    if (window.AndroidBridge && window.AndroidBridge.conectarBluetooth) {
+        window.AndroidBridge.conectarBluetooth();
+    }
+    
+    if (connTimeoutId) clearTimeout(connTimeoutId);
+    connTimeoutId = setTimeout(function() {
+        window.onBluetoothError('TIMEOUT');
+    }, 120000);
+}
+
+window.onDeviceConnected = function(deviceName) {
+    if (connTimeoutId) { clearTimeout(connTimeoutId); connTimeoutId = null; }
+    var spinner = document.getElementById('conn-spinner');
+    if (spinner) spinner.style.display = 'none';
+    document.getElementById('conn-title').textContent = '¡Conectado!';
+    document.getElementById('conn-sub').textContent = deviceName || 'PC';
+    setTimeout(function() {
+        setMode('play');
+        showScreen('screen-gamepad');
+        startControllerLoop();
+    }, 800);
+};
 
 window.onDeviceDisconnected = function() {
     if (appState === 'play') {
@@ -1453,7 +1499,8 @@ window.onDeviceDisconnected = function() {
 
 window.onHidRegistered = function() {
     /* HID profile active: device is now broadcasting as the gamepad */
-    var hidName = hidNames[currentType] || 'GameBridge Controller';
+    var namesMap = { ps: 'Wireless Controller', xbox: 'Xbox Wireless Controller', generic: 'GameBridge Controller', racing: 'GameBridge Wheel' };
+    var hidName = namesMap[currentType] || 'GameBridge Controller';
     var msg = document.getElementById('pair-status-msg');
     if (msg) {
         msg.textContent = '&#10003; Activo — Buscando "' + hidName + '" en tu PC...';
@@ -1461,19 +1508,18 @@ window.onHidRegistered = function() {
     }
     var dot = document.getElementById('scan-dot');
     if (dot) dot.classList.add('on');
+    
+    var pairDisplay = document.getElementById('pair-device-name-display');
+    if (pairDisplay) pairDisplay.textContent = hidName;
 };
 
 /* Reintentar la ultima conexion */
 function retryConnect() {
-    document.getElementById('conn-error-box').style.display = 'none';
-    document.getElementById('conn-spinner').style.display   = 'block';
-    document.getElementById('conn-title').textContent = 'Reintentando...';
-    document.getElementById('conn-sub').textContent   = 'Buscando dispositivo Bluetooth...';
-    if (lastConnectedAddress && window.AndroidBridge) {
-        window.AndroidBridge.conectarDispositivo(lastConnectedAddress);
+    // Si estamos en pantalla de conexión BT, simplemente iniciar BT pasivo
+    if (document.getElementById('screen-connecting').classList.contains('active')) {
+        startPassiveBluetooth();
     } else {
-        /* Si no hay MAC guardada, volver al escaner */
-        showScreen('screen-connect');
+        startWifiConnection();
     }
 }
 
