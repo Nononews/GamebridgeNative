@@ -211,11 +211,19 @@ class HidManager(private val context: Context, private val webView: WebView) {
                         notifyJS("window.onHidRegistered && window.onHidRegistered()")
                         
                         // Solo cuando el SDP está registrado exitosamente, habilitamos la visibilidad (Pairing Mode)
-                        val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
-                            putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        // Ejecutamos en el Main Thread porque Android prohíbe lanzar intents desde background threads
+                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                            try {
+                                val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
+                                    putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(discoverableIntent)
+                                Log.i(TAG, "Intent de Visibilidad (Discoverable) lanzado correctamente.")
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error lanzando visibilidad: ${e.message}")
+                            }
                         }
-                        context.startActivity(discoverableIntent)
                     }
                 }
 
