@@ -127,6 +127,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun makeDiscoverable() {
+        runOnUiThread {
+            try {
+                val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
+                    putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
+                }
+                startActivity(discoverableIntent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         hidManager.cleanup()

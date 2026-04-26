@@ -91,17 +91,6 @@ class HidManager(private val context: Context, private val webView: WebView) {
             "racing"  -> "GameBridge Wheel"
             else      -> "GameBridge Controller"
         }
-        // Rename the Bluetooth adapter so the PC discovers it with the right name
-        try {
-            val adapter = BluetoothAdapter.getDefaultAdapter()
-            @SuppressLint("MissingPermission")
-            if (adapter != null) {
-                adapter.name = deviceName
-                Log.i(TAG, "BT adapter renamed to: $deviceName")
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Could not rename adapter: ${e.message}")
-        }
     }
 
     fun hasPermissions(): Boolean {
@@ -120,6 +109,14 @@ class HidManager(private val context: Context, private val webView: WebView) {
             Log.e(TAG, "Bluetooth no disponible o desactivado")
             notifyJS("window.onBluetoothError && window.onBluetoothError('BT_DISABLED')")
             return
+        }
+
+        // Renombrar el adaptador ahora que estamos seguros de tener permisos y estar iniciando
+        try {
+            bluetoothAdapter!!.name = deviceName
+            Log.i(TAG, "BT adapter renamed to: $deviceName")
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not rename adapter: ${e.message}")
         }
 
         bluetoothAdapter!!.getProfileProxy(context, object : BluetoothProfile.ServiceListener {
@@ -211,18 +208,8 @@ class HidManager(private val context: Context, private val webView: WebView) {
                         notifyJS("window.onHidRegistered && window.onHidRegistered()")
                         
                         // Solo cuando el SDP está registrado exitosamente, habilitamos la visibilidad (Pairing Mode)
-                        // Ejecutamos en el Main Thread porque Android prohíbe lanzar intents desde background threads
-                        android.os.Handler(android.os.Looper.getMainLooper()).post {
-                            try {
-                                val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
-                                    putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120)
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                context.startActivity(discoverableIntent)
-                                Log.i(TAG, "Intent de Visibilidad (Discoverable) lanzado correctamente.")
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error lanzando visibilidad: ${e.message}")
-                            }
+                        if (context is MainActivity) {
+                            context.makeDiscoverable()
                         }
                     }
                 }
