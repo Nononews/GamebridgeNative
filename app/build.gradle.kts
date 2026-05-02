@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "com.nononews.gamebridgenative"
-        minSdk = 28 // Required for BluetoothHidDevice
+        minSdk = 28
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
